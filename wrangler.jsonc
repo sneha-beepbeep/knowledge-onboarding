@@ -51,7 +51,7 @@
           "binding": "DB",
           "database_name": "knowledge-check-demo-db",
           // Written by `npm run deploy:demo` (creates the DB in weur, or reuses it).
-          "database_id": "00000000-0000-0000-0000-0000000000de",
+          "database_id": "24354d59-20c3-4285-97c5-65fea8f07ca2",
           "migrations_dir": "migrations"
         }
       ],
