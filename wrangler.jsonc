@@ -1,0 +1,30 @@
+{
+  // Cloudflare config: one Worker serves the React app (static assets) and the /api routes.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cf-app-template",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    // Requests that aren't /api/* fall through to the React app (client-side routing).
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cf-app-template-db",
+      // Placeholder — fine for local dev. Before first deploy, run
+      // `npx wrangler d1 create cf-app-template-db` and paste the real id here.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      // Before first deploy, run `npx wrangler r2 bucket create cf-app-template-images`.
+      "bucket_name": "cf-app-template-images"
+    }
+  ],
+  "observability": { "enabled": true }
+}
