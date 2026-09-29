@@ -1,15 +1,19 @@
 // Shared components (technical plan §6). Text first, never colour alone.
 import { useEffect, useRef, type ReactNode } from "react";
+import { usePath } from "../lib/router";
 
 const APP = "Onboarding Knowledge Check";
 
 /** One H1 per page; sets the document title and moves focus to the heading on navigation. */
 export function Page({ title, heading, children, wide }: { title: string; heading?: string; children: ReactNode; wide?: boolean }) {
   const h1 = useRef<HTMLHeadingElement>(null);
+  const path = usePath();
   useEffect(() => {
     document.title = `${title} · ${APP}`;
-    h1.current?.focus();
   }, [title]);
+  useEffect(() => {
+    h1.current?.focus();
+  }, [path]);
   return (
     <main id="main" className={wide ? "wide" : undefined}>
       <h1 ref={h1} tabIndex={-1}>
@@ -63,6 +67,10 @@ export function ErrorSummary({ errors, title = "There's a problem" }: { errors: 
     </div>
   );
 }
+
+/** Props that tie a field to its inline error (aria-invalid + aria-describedby). */
+export const errProps = (id: string, message?: string) =>
+  message ? { "aria-invalid": true as const, "aria-describedby": `${id}-error` } : {};
 
 export function InlineError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;

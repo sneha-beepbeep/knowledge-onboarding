@@ -1,7 +1,7 @@
 // A2 People & roles (F12, §2, §7).
 import { useState, type FormEvent } from "react";
 import { api, ok, ApiError } from "../api";
-import { Page, Skeleton, LoadError, ConfirmDialog, LiveRegion, InlineError, DataTable } from "../components/ui";
+import { Page, Skeleton, LoadError, ConfirmDialog, LiveRegion, InlineError, DataTable, errProps } from "../components/ui";
 import { useLoad } from "../lib/useLoad";
 import { useMe } from "../lib/me";
 import { CopyLink } from "../components/CopyLink";
@@ -169,7 +169,7 @@ function AssignForm({ data, role, onDone, onCancel }: { data: Data; role: string
         {mode === "existing" ? (
           <>
             <label htmlFor="assign-person">Person</label>
-            <select id="assign-person" value={personId} onChange={(e) => setPersonId(e.target.value)} aria-invalid={!!err}>
+            <select id="assign-person" value={personId} onChange={(e) => setPersonId(e.target.value)} {...errProps("assign", err ?? undefined)}>
               <option value="">Choose…</option>
               {data.allPeople.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -181,7 +181,7 @@ function AssignForm({ data, role, onDone, onCancel }: { data: Data; role: string
         ) : (
           <>
             <label htmlFor="assign-name">Name</label>
-            <input id="assign-name" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!!err} />
+            <input id="assign-name" value={name} onChange={(e) => setName(e.target.value)} {...errProps("assign", err ?? undefined)} />
             <label htmlFor="assign-email">Email (optional, shown only here)</label>
             <input id="assign-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </>

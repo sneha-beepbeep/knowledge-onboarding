@@ -1,7 +1,7 @@
 // A1 Pilot overview (admin home).
 import { useState, type FormEvent } from "react";
 import { api, ok, ApiError } from "../api";
-import { Page, Skeleton, LoadError, StatusLabel, ErrorSummary, InlineError, LiveRegion, DataTable, ConfirmDialog } from "../components/ui";
+import { Page, Skeleton, LoadError, StatusLabel, ErrorSummary, InlineError, LiveRegion, DataTable, ConfirmDialog, errProps } from "../components/ui";
 import { CopyLink } from "../components/CopyLink";
 import { useLoad } from "../lib/useLoad";
 import { Link } from "../lib/router";
@@ -138,10 +138,10 @@ function HrSignoff({ today, onSaved }: { today: string; onSaved: () => Promise<v
       <ErrorSummary errors={errors} />
       <label htmlFor="hr-date">Date</label>
       <InlineError id="hr-date" message={e("hr-date")} />
-      <input id="hr-date" type="date" max={today} value={date} onChange={(ev) => setDate(ev.target.value)} aria-invalid={!!e("hr-date")} />
+      <input id="hr-date" type="date" max={today} value={date} onChange={(ev) => setDate(ev.target.value)} {...errProps("hr-date", e("hr-date"))} />
       <label htmlFor="hr-by">Signed off by</label>
       <InlineError id="hr-by" message={e("hr-by")} />
-      <input id="hr-by" value={by} onChange={(ev) => setBy(ev.target.value)} aria-invalid={!!e("hr-by")} />
+      <input id="hr-by" value={by} onChange={(ev) => setBy(ev.target.value)} {...errProps("hr-by", e("hr-by"))} />
       <div className="actions">
         <button type="submit">Save</button>
         <button type="button" className="secondary" onClick={() => setOpen(false)}>

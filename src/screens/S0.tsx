@@ -1,7 +1,7 @@
 // S0 Sign-in and access states (F12).
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ok, ApiError } from "../api";
-import { Page, ErrorSummary, InlineError } from "../components/ui";
+import { Page, ErrorSummary, InlineError, errProps } from "../components/ui";
 import { setToken, takeReturnTo } from "../lib/session";
 import { navigate } from "../lib/router";
 
@@ -103,10 +103,10 @@ export function SetupScreen({ onSignedIn }: { onSignedIn: () => Promise<void> })
       <form onSubmit={submit} className="stack" noValidate>
         <label htmlFor="setup-token">Set-up code</label>
         <InlineError id="setup-token" message={err("setup-token")} />
-        <input id="setup-token" type="password" value={token} onChange={(e) => setTok(e.target.value)} autoComplete="off" />
+        <input id="setup-token" type="password" value={token} onChange={(e) => setTok(e.target.value)} autoComplete="off" {...errProps("setup-token", err("setup-token"))} />
         <label htmlFor="setup-name">Your name</label>
         <InlineError id="setup-name" message={err("setup-name")} />
-        <input id="setup-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+        <input id="setup-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" {...errProps("setup-name", err("setup-name"))} />
         <label htmlFor="setup-email">Email (optional)</label>
         <input id="setup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
         <div>

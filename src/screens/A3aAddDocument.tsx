@@ -1,7 +1,7 @@
 // A3a Add document (dialog, F1). Text is extracted in the browser; only text is sent.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ok, ApiError } from "../api";
-import { ErrorSummary, InlineError, LiveRegion, type FieldError } from "../components/ui";
+import { ErrorSummary, InlineError, LiveRegion, errProps, type FieldError } from "../components/ui";
 import { MAX_DOC_CHARS, MAX_PDF_BYTES } from "../../shared/limits";
 
 const TOO_LONG = "This document is too long to use in one piece. Split it into smaller documents by topic.";
@@ -170,22 +170,21 @@ export function AddDocumentDialog({
               type="file"
               accept=".pdf,.txt,application/pdf,text/plain"
               onChange={(e) => onFile(e.target.files?.[0])}
-              aria-invalid={!!err("doc-file")}
-              aria-describedby="doc-file-error"
+              {...errProps("doc-file", err("doc-file"))}
             />
           </>
         ) : (
           <>
             <label htmlFor="doc-paste">Text</label>
             <InlineError id="doc-paste" message={err("doc-paste")} />
-            <textarea id="doc-paste" value={pasted} onChange={(e) => setPasted(e.target.value)} aria-invalid={!!err("doc-paste")} />
+            <textarea id="doc-paste" value={pasted} onChange={(e) => setPasted(e.target.value)} {...errProps("doc-paste", err("doc-paste"))} />
           </>
         )}
         <LiveRegion>{status}</LiveRegion>
 
         <label htmlFor="doc-name">Name</label>
         <InlineError id="doc-name" message={err("doc-name")} />
-        <input id="doc-name" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!!err("doc-name")} />
+        <input id="doc-name" value={name} onChange={(e) => setName(e.target.value)} {...errProps("doc-name", err("doc-name"))} />
 
         <label htmlFor="doc-date">Version date</label>
         <p className="hint" id="doc-date-hint">When was this material last updated?</p>
@@ -195,8 +194,8 @@ export function AddDocumentDialog({
           type="date"
           value={versionDate}
           onChange={(e) => setVersionDate(e.target.value)}
-          aria-describedby="doc-date-hint"
           aria-invalid={!!err("doc-date")}
+          aria-describedby={err("doc-date") ? "doc-date-hint doc-date-error" : "doc-date-hint"}
         />
 
         <fieldset>
@@ -216,6 +215,7 @@ export function AddDocumentDialog({
           <div className="row">
             <input
               id="doc-new-topic"
+              {...errProps("doc-new-topic", err("doc-new-topic"))}
               value={newTopic}
               maxLength={80}
               onChange={(e) => setNewTopic(e.target.value)}

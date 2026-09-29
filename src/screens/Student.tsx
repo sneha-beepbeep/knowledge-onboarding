@@ -320,12 +320,17 @@ export function T3Quiz({ params }: { params: Record<string, string> }) {
         <section key={t.id} aria-labelledby={`t-${t.id}`}>
           <h2 id={`t-${t.id}`}>{t.name}</h2>
           {t.questions.map((q) => (
-            <fieldset key={q.id} id={`q-${q.id}`} tabIndex={-1} aria-invalid={missing.includes(q.id) && answers[q.id] === undefined}>
+            <fieldset
+              key={q.id}
+              id={`q-${q.id}`}
+              tabIndex={-1}
+              aria-describedby={missing.includes(q.id) && answers[q.id] === undefined ? `q-${q.id}-error` : undefined}
+            >
               <legend>
                 {numberOf.get(q.id)}. {q.text}
               </legend>
               {missing.includes(q.id) && answers[q.id] === undefined && (
-                <p className="field-error">
+                <p className="field-error" id={`q-${q.id}-error`}>
                   <span aria-hidden="true">⚠ </span>This question still needs an answer.
                 </p>
               )}

@@ -60,3 +60,10 @@ describe("form split", () => {
     expect(checkAssignment([{ topicId: 1, A: [1, 2, 3], B: [4, 5, 6] }], approved, 4, names)).toBeNull();
   });
 });
+
+describe("date formatting is runtime-independent", () => {
+  it("uses fixed short names (Sep, not Sept)", () => {
+    expect(formatDate("2026-09-29")).toBe("Tue 29 Sep");
+    expect(formatDate("2027-01-03")).toBe("Sun 3 Jan");
+  });
+});

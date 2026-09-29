@@ -1,7 +1,7 @@
 // M1 Flags (follow-up owner home) and M2 Flag detail & follow-up log.
 import { useState, type FormEvent } from "react";
 import { api, ok, ApiError } from "../api";
-import { Page, Skeleton, LoadError, StatusLabel, DataTable, InlineError, LiveRegion } from "../components/ui";
+import { Page, Skeleton, LoadError, StatusLabel, DataTable, InlineError, LiveRegion, ErrorSummary, errProps } from "../components/ui";
 import { useLoad } from "../lib/useLoad";
 import { Link } from "../lib/router";
 import { useMe } from "../lib/me";
@@ -216,6 +216,12 @@ function FollowupForm({
 
   return (
     <form onSubmit={submit} className="stack" noValidate>
+      <ErrorSummary
+        errors={[
+          ...(errs.date ? [{ field: `${id}-date`, message: errs.date }] : []),
+          ...(errs.note ? [{ field: `${id}-note`, message: errs.note }] : []),
+        ]}
+      />
       {f && <p className="muted">Logged {formatDate(f.date)}. You can edit this until check 2 is submitted.</p>}
       <label htmlFor={`${id}-date`}>Follow-up date</label>
       <InlineError id={`${id}-date`} message={errs.date} />
@@ -226,8 +232,7 @@ function FollowupForm({
         min={flaggedDate}
         max={today}
         onChange={(e) => setDate(e.target.value)}
-        aria-invalid={!!errs.date}
-        aria-describedby={errs.date ? `${id}-date-error` : undefined}
+        {...errProps(`${id}-date`, errs.date)}
       />
       <label htmlFor={`${id}-note`}>What was done</label>
       <p className="hint" id={`${id}-note-hint`}>
@@ -241,7 +246,7 @@ function FollowupForm({
         placeholder="e.g. 30-min walkthrough of the returns process"
         onChange={(e) => setNote(e.target.value)}
         aria-invalid={!!errs.note}
-        aria-describedby={`${id}-note-hint`}
+        aria-describedby={errs.note ? `${id}-note-hint ${id}-note-error` : `${id}-note-hint`}
       />
       {saveErr && (
         <p className="error" role="alert">

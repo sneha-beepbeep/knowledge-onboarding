@@ -81,10 +81,11 @@ export function workingDaysBetween(from: string, to: string): number {
   return sign * count;
 }
 
-/** "Tue 6 Oct" (design spec §5 conventions). */
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Tue 6 Oct" (design spec §5 conventions). Fixed names, so every runtime formats alike. */
 export function formatDate(iso: string): string {
   const d = toUtc(iso);
-  const wd = d.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
-  const mon = d.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
-  return `${wd} ${d.getUTCDate()} ${mon}`;
+  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
 }

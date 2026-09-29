@@ -1,7 +1,7 @@
 // V1 Review queue, V2 Review a question, V3 Question statistics.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ok, ApiError } from "../api";
-import { Page, Skeleton, LoadError, StatusLabel, ErrorSummary, InlineError, LiveRegion, DataTable, type FieldError } from "../components/ui";
+import { Page, Skeleton, LoadError, StatusLabel, ErrorSummary, InlineError, LiveRegion, DataTable, errProps, type FieldError } from "../components/ui";
 import { useLoad } from "../lib/useLoad";
 import { Link, navigate } from "../lib/router";
 import { formatDate } from "../../shared/dates";
@@ -311,7 +311,7 @@ function EditForm({ q, busy, onCancel, onSave }: { q: Q; busy: boolean; onCancel
       <ErrorSummary errors={errors} />
       <label htmlFor="edit-text">Question</label>
       <InlineError id="edit-text" message={e("edit-text")} />
-      <textarea id="edit-text" value={text} onChange={(ev) => setText(ev.target.value)} aria-invalid={!!e("edit-text")} style={{ minHeight: 80 }} />
+      <textarea id="edit-text" value={text} onChange={(ev) => setText(ev.target.value)} {...errProps("edit-text", e("edit-text"))} style={{ minHeight: 80 }} />
       <fieldset>
         <legend>Options (choose the correct one)</legend>
         {options.map((o, i) => (
@@ -323,7 +323,7 @@ function EditForm({ q, busy, onCancel, onSave }: { q: Q; busy: boolean; onCancel
                 id={`edit-option-${i}`}
                 value={o}
                 onChange={(ev) => setOptions(options.map((x, j) => (j === i ? ev.target.value : x)))}
-                aria-invalid={!!e(`edit-option-${i}`)}
+                {...errProps(`edit-option-${i}`, e(`edit-option-${i}`))}
                 style={{ flex: 1 }}
               />
               <label className="option">
