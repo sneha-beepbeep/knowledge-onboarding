@@ -7,7 +7,8 @@ import { A3Bank } from "./screens/A3Bank";
 import { V1Queue, V2Question, V3Stats } from "./screens/Review";
 import { A4Publish } from "./screens/A4Publish";
 import { T1Home, T2Notice, T3Quiz } from "./screens/Student";
-import { R1Results } from "./screens/Results";
+import { R1Results, R2Compare } from "./screens/Results";
+import { M1Flags, M2Flag } from "./screens/Flags";
 
 const ADMIN = ["bank_owner", "cpo"] as const;
 
@@ -23,4 +24,7 @@ export const routes: RouteDef[] = [
   { path: "/notice", roles: ["student"], component: T2Notice, bare: true },
   { path: "/check/:form", roles: ["student"], component: T3Quiz },
   { path: "/results/:attemptId", roles: ["student", "follow_up_owner", ...ADMIN], component: R1Results },
+  { path: "/compare/:personId", roles: ["student", "follow_up_owner", ...ADMIN], component: R2Compare },
+  { path: "/flags", roles: ["follow_up_owner", ...ADMIN], component: M1Flags },
+  { path: "/flags/:id", roles: ["follow_up_owner", ...ADMIN], component: M2Flag },
 ];

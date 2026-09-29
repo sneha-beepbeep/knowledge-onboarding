@@ -82,6 +82,9 @@ const BUILT = new Set([
   "GET /api/attempts/0",
   "GET /api/comparison/0",
   "POST /api/pilot/form-a/sent",
+  "GET /api/flags",
+  "GET /api/flags/0",
+  "PUT /api/flags/0/followups/0",
 ]);
 const built = (label: string) => BUILT.has(label);
 

@@ -109,3 +109,61 @@ export function R1Results({ params }: { params: Record<string, string> }) {
     </Page>
   );
 }
+
+/** R2 Form A vs. Form B comparison (shared view; F9). */
+export function R2Compare({ params }: { params: Record<string, string> }) {
+  const { data, error, loading, reload } = useLoad(() => ok(api.comparison[":personId"].$get({ param: { personId: params.personId } })), [params.personId]);
+  if (loading && !data) return <Page title="Compare checks"><Skeleton /></Page>;
+  if (error || !data)
+    return (
+      <Page title="Compare checks">
+        {error instanceof ApiError && error.status === 404 ? <p>This page isn't available to you.</p> : <LoadError message="Couldn't load these results. Reload the page." onRetry={reload} />}
+      </Page>
+    );
+  const self = data.viewer === "self";
+  const heading = self ? "Your results: check 1 and check 2" : `${data.studentName}'s results: check 1 and check 2`;
+  if (!data.bothDone)
+    return (
+      <Page title="Compare checks" heading={heading}>
+        <p>Check 2 isn't done yet.</p>
+        <Link to={`/results/${data.attemptAId}`}>Back to check 1 results</Link>
+      </Page>
+    );
+  const points = data.perTopic ? Math.round(100 / data.perTopic) : null;
+  const change = (n: number | null) => (n === null ? "–" : n === 0 ? "no change" : n > 0 ? `+${n}` : `−${Math.abs(n)}`);
+  return (
+    <Page title="Compare checks" heading={heading}>
+      <DataTable head={["Topic", "Check 1", "Check 2", "Change", "Followed up"]}>
+        {data.rows.map((r) => (
+          <tr key={r.topicId}>
+            <th scope="row">
+              {r.name}
+            </th>
+            <td>
+              {r.a.correct} of {r.a.total} ({pct(r.a.correct, r.a.total)}%)
+            </td>
+            <td>{r.b ? `${r.b.correct} of ${r.b.total} (${pct(r.b.correct, r.b.total)}%)` : "–"}</td>
+            <td>{change(r.change)}</td>
+            <td>
+              {/* Form A's weak topics are marked here: ◆ Yes, [date]. */}
+              {r.weakInA ? <StatusLabel tone="attention">{r.followedUpDate ? `Yes, ${formatDate(r.followedUpDate)}` : "Yes"}</StatusLabel> : "–"}
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+      <p className="muted">
+        Check 1 and check 2 use different questions on the same topics, so part of any change can come from the questions themselves.
+        {points !== null && ` With ${data.perTopic} questions per topic, one question moves a topic's result by ${points} points.`}
+      </p>
+      <p>
+        <Link to={`/results/${data.attemptAId}`}>Check 1 results</Link>
+        {data.attemptBId && (
+          <>
+            {" · "}
+            <Link to={`/results/${data.attemptBId}`}>Check 2 results</Link>
+          </>
+        )}
+      </p>
+    </Page>
+  );
+}
