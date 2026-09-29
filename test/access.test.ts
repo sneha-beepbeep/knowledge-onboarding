@@ -73,6 +73,7 @@ const BUILT = new Set([
   "POST /api/review/questions/0/decision",
   "POST /api/review/questions/0/undo",
   "GET /api/stats",
+  "GET /api/publish",
 ]);
 const built = (label: string) => BUILT.has(label);
 
