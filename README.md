@@ -4,22 +4,27 @@
 
 # Onboarding Knowledge Check (working title)
 
-An internal tool that gives newly joining working students short knowledge-check quizzes built from the company's own onboarding material, scores them, and saves the results so gaps can be followed up.
+An internal tool that gives newly joining working students short multiple-choice knowledge checks built only from the company's own onboarding material. It scores results by topic, flags weak topics to a named person for follow-up, and compares a retake against the first attempt.
 
-**Status: in development.** Nothing runs yet. The project is at the planning stage. A first pilot with a single working student has been approved, and requirements are being defined.
+**Status: in development.** Nothing runs yet. The requirements for a first pilot with a single working student have been drafted and are awaiting approval. The pilot runs for 90 days from the student's first quiz.
 
 ## Who it's for
 
-Working students who are new to the company and going through onboarding. It also serves the people who support them: the person who maintains the onboarding content, and the manager or buddy who follows up on results.
+Working students (part-time student employees) who are new to the company and going through onboarding. It also serves the people around them:
+
+- the person who maintains the question bank
+- a subject-matter expert who checks every question for correctness
+- the student's manager, who follows up when a topic scores low
 
 ## What it does
 
 All planned, none built yet:
 
-- Planned: quiz questions drafted with AI from the company's onboarding material, then checked and approved by a named reviewer before anyone sees them.
-- Planned: everyone in a group of new joiners gets the same reviewed questions, so results can be compared fairly.
-- Planned: scored results are saved, and quizzes can be retaken.
-- Planned: a clear follow-up step when someone scores low, so gaps get closed and not just recorded.
+- Planned: quiz questions drafted with AI from uploaded onboarding material, each linked to its source passage. A named reviewer approves every question before anyone sees it.
+- Planned: a fixed, versioned question set with two forms: one for the first attempt, one for the retake. Everyone is measured against the same approved questions.
+- Planned: scores per topic, with the correct answers shown after the quiz.
+- Planned: any topic below the threshold is flagged to the student's manager, who records the follow-up they gave.
+- Planned: a retake after the follow-up, shown side by side with the first attempt.
 
 ## Getting started
 
@@ -28,8 +33,8 @@ Not yet runnable. Setup and usage instructions will be added when the pilot is r
 ## Limitations
 
 - The first pilot involves one working student. It tests whether the quiz-and-follow-up process works, not whether it reduces errors across the company.
-- Content comes only from internal onboarding material. Web articles and other outside sources are deliberately excluded from the pilot.
-- Who can see results, what they are used for and how long they are kept are still being agreed with HR. This will be settled, and the participant told, before any real results are collected.
+- Content comes only from internal onboarding material. Web articles and other outside sources are excluded.
+- Results are for development only, not performance evaluation. Who can see them, and how long they are kept, will be agreed with HR and explained to the participant before any real results are collected.
 
 ---
 
