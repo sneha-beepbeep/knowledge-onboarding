@@ -1,8 +1,10 @@
 # Design Spec: Onboarding Knowledge Check (working title)
 
-*Stage 4 `/design`, 2026-09-29, rev. 2. **CPO-approved 2026-09-29.** Rev. 2 records the CPO's decisions of 2026-09-29 on the open questions (section 12) and applies them throughout. Source: `docs/prd.md` (CPO-approved, rev. 2). Context: `docs/opportunity-brief.md`, `docs/ceo-review.md`. PRD rev. 2 carries the F12 reviewer-access (P1) and P9/P10 amendments this spec matches.*
+*Stage 4 `/design`, 2026-09-29, rev. 3. **CPO-approved.** Rev. 2 was approved on 2026-09-29. Rev. 3 makes the minimum changes needed after the CPO's later decisions of 2026-09-29 (round 1 without AI, notice version 2, bank owner ≠ reviewer); see the rev. 3 changelog at the end. Source: `docs/prd.md` (CPO-approved, rev. 2; rev. 3 is being applied in parallel). Context: `docs/opportunity-brief.md`, `docs/ceo-review.md`.*
 
-**What this spec does not decide:** the tech stack, sign-in mechanism, AI provider, hosting, and whether notifications go by email. Those belong to `/plan`. Where the design depends on one of them, the dependency is marked **[plan]**. The named people for each role, the AI provider and HR sign-off with the final notice text are still open (section 12.3). The design handles "not yet decided" as an explicit state and does not assume an answer.
+**What this spec does not decide:** the tech stack, sign-in mechanism, AI provider, hosting, and whether notifications go by email. Those belong to `/plan`. Where the design depends on one of them, the dependency is marked **[plan]**. HR approval of the notice (version 2) is still open (section 12.3). The design handles "not yet decided" as an explicit state and does not assume an answer.
+
+**Round 1 (rev. 3).** IT skipped AI for round 1, so production runs with `AI_ENABLED=false`. The bank owner writes questions in a JSON file, and an importer script (not UI) loads them. Parts of this spec that apply only when AI drafting is on are labelled **"round 2 / when AI_ENABLED"**.
 
 References of the form "(decision N)" point to section 12.
 
@@ -25,12 +27,12 @@ References of the form "(decision N)" point to section 12.
 | Role | Person | Entry point | Lands on |
 |---|---|---|---|
 | **Student** | Pilot working student *(unnamed, open)* | The link in the "Your knowledge check" message (email or pasted by the bank owner) **[plan]** | T1 Student home, or T2 Notice if not yet answered |
-| **Follow-up owner** | Student's direct manager *(unnamed, open)* | The flag notification link, or opening the app | M1 Flags |
-| **Bank owner** | Product-team member *(unnamed, open)* | Opening the app | A1 Pilot overview |
-| **Content reviewer** | Subject-matter expert *(unnamed, open)* | The "Questions ready for review" link, or opening the app | V1 Review queue |
+| **Follow-up owner** | Student's direct manager: **S** | The flag notification link, or opening the app | M1 Flags |
+| **Bank owner** | Product-team member: **N** | Opening the app | A1 Pilot overview |
+| **Content reviewer** | Subject-matter expert: **E** | The "Questions ready for review" link, or opening the app | V1 Review queue |
 | **Pilot sponsor** | CPO | Opening the app | A1 Pilot overview |
 
-One person can hold several roles. The navigation shows the union of their roles' screens. Nav items: *My checks* (student), *Flags* (follow-up owner), *Review* (reviewer), *Pilot* / *Bank* / *Data* (bank owner and CPO).
+One person can hold several roles, except that the bank owner and the reviewer must be different people (PRD rev. 3; see A2). The navigation shows the union of their roles' screens. Nav items: *My checks* (student), *Flags* (follow-up owner), *Review* (reviewer), *Pilot* / *Bank* / *Data* (bank owner and CPO).
 
 ### 2.2 Access matrix (what each role can see)
 
@@ -51,7 +53,7 @@ The original F12 grouped "bank owner/reviewer/CPO (full)", while section 6 says 
 
 **At n=1, answer statistics are not anonymous.** With one student, "question 7: 0 of 1 correct" is that student's answer, and the reviewer knows who the student is. **Decided (decision 1):** V3 Question statistics always shows the review-outcome statistics, which are about questions rather than people (rewrite rate, M3). It hides answer statistics for a question until **at least 5 different people** have answered it. In the n=1 pilot, the reviewer therefore sees no answer statistics.
 
-If the reviewer is also the manager or an admin (possible at n=1), the four levels do not separate that person's access: they see what their other role allows. A2 People & roles shows a warning and does not block (decision 7), and the notice copy adjusts (section 7.1).
+If the reviewer is also the manager or an admin (possible at n=1), the four levels do not separate that person's access: they see what their other role allows. A2 People & roles shows a warning and does not block (decision 7; the one exception is bank owner = reviewer in production, see A2), and the notice copy adjusts (section 7.1).
 
 ---
 
@@ -86,14 +88,16 @@ Eighteen screens and dialogs, of which R1 and R2 are shared. There is no setting
 
 ### Flow 0: Pilot setup (bank owner, CPO)
 
-1. The CPO or bank owner opens **A1**. The readiness checklist shows four unmet items: *Roles named*, *AI provider set up*, *Bank published*, *HR sign-off recorded*.
+1. The CPO or bank owner opens **A1**. The readiness checklist shows the unmet items: *Roles named*, *AI provider set up* (round 2 / when AI_ENABLED only), *Bank published*, *HR sign-off recorded*.
 2. **A2:** assign a person to each role (student, follow-up owner, bank owner, reviewer). Items can be saved one at a time. Empty roles keep the checklist item open.
-3. The AI provider is configured outside the UI **[plan]**. A1 shows it only as *Set up* or *Not set up*. Until it is set up, drafting on A3 is disabled with a reason.
+3. *Round 2 / when AI_ENABLED:* the AI provider is configured outside the UI **[plan]**. A1 shows it only as *Set up* or *Not set up*. Until it is set up, drafting on A3 is disabled with a reason.
 4. HR sign-off: the CPO records the date and the name of the person who signed off on A1 (one small form). This is only a record. The approval itself happens outside the app.
 
 Items 2-4 can happen in any order, alongside Flow 1.
 
 ### Flow 1: Bank setup, drafting, review, publish
+
+*Round 1 (`AI_ENABLED=false`):* steps 2-4 and 6 are replaced by the importer. The bank owner writes the questions in a JSON file, and the importer script applies the same source-quote check as drafting and loads them as waiting for review. Steps 1, 5, 7 and 8 are unchanged, so the reviewer gate stays.
 
 1. **Bank owner, A3:** choose *Add document*, then **A3a**: upload a file (PDF or plain text) or paste text, and enter a name, a version date and one or more topic tags. Save. The document appears under each of its topics.
 2. **A3:** set *Questions per topic per form* once (3-5, **default 4**, decision 2). Per topic, choose *Draft questions*. The app drafts `2 × per-form count + 2` questions per topic (10 at the default), in English (decision 5), from documents tagged with that topic only.
@@ -163,9 +167,10 @@ Purpose: one page showing where the loop stands and what is blocking it.
 | Item | Done when | Action |
 |---|---|---|
 | Roles named | Student, follow-up owner, bank owner and reviewer are all assigned | *Assign roles* → A2 |
-| AI provider set up | Configured **[plan]** | Text only: "Not set up. The provider must be approved before any material is sent (PRD Q2)." |
+| AI provider set up (round 2 / when AI_ENABLED) | Configured **[plan]** | Text only: "Not set up. The provider must be approved before any material is sent (PRD Q2)." |
+| *Round 1 (`AI_ENABLED=false`):* this row reads "AI drafting: off for this round" | Not a readiness condition. Send Form A does not need AI | None |
 | Bank published | A version is published | *Go to bank* → A3 |
-| HR sign-off recorded | The CPO has entered a date and a name | *Record sign-off* (CPO only): date, "Signed off by" (free text), Save |
+| HR sign-off recorded | The CPO has entered a date and a name for the current notice version (version 2 in round 1) | *Record sign-off* (CPO only): date, "Signed off by" (free text), Save |
 
 **Section 2: Pilot loop.** One row per stage, each with a status and a date:
 Bank published → Form A sent → Notice (Took part / Declined / Not yet) → Form A submitted (day 0) → Flags (N topics, or "none") → Follow-up (due date; *On time* / *Overdue by N working days* / *Done [date]*; or "Not needed" when there are no flags) → Form B available (due date) → Form B submitted → Comparison (link to R2).
@@ -174,7 +179,9 @@ Overdue states use a text label ("Overdue") plus an icon, not colour alone. The 
 
 **Section 3: Key dates.** Day 0, day 90 (the review), and "Delete identifiable results by [day 90 + 30 days]".
 
-**Section 4: Review quality (M3).** "Drafts reviewed: 40. Approved as is: 22. Edited (minor): 6. Edited (substantial): 5. Rejected: 7. **Rewrite rate: 30%** (kill line: more than 50%)." Above 50%, a text banner appears: "Rewrite rate is above 50%. This is kill signal K3 in the PRD. Consider `/checkpoint`." The banner is informational and blocks nothing.
+**Section 4: Review quality (M3), round 2 / when AI_ENABLED.** "Drafts reviewed: 40. Approved as is: 22. Edited (minor): 6. Edited (substantial): 5. Rejected: 7. **Rewrite rate: 30%** (kill line: more than 50%)." Above 50%, a text banner appears: "Rewrite rate is above 50%. This is kill signal K3 in the PRD. Consider `/checkpoint`." The banner is informational and blocks nothing.
+
+*Round 1 (`AI_ENABLED=false`):* the section is titled **"Review outcomes"** and shows the same counts ("Questions reviewed: 40. Approved as is: 22. Edited (minor): 6. Edited (substantial): 5. Rejected: 7."). It is a diagnostic of reviewer disagreement, not a kill signal (K3 is suspended in round 1). The K3 banner and the "kill line" copy are hidden.
 
 **Primary action:** *Send Form A to [student]* (only when readiness is complete and Form A has not yet been sent). Afterwards the action reads *Copy Form A link again*.
 
@@ -189,12 +196,15 @@ A list of the four roles. Each row shows the role name, a one-line description (
 
 - The CPO appears as sponsor automatically (they have admin access).
 - **Warnings** (shown as text, never blocking; decision 7): the reviewer is also the follow-up owner ("The PRD recommends a reviewer who isn't the manager. This person will see the student's named results as their manager."). The reviewer is also an admin ("This person will see named results through their admin access."). Either warning also notes: "The student notice will list this person once, under their other role."
+- **Bank owner ≠ reviewer (rev. 3, PRD rev. 3):** enforced in production only. In production, an assignment that would make the bank owner and the reviewer the same person is refused with the error "The bank owner and the reviewer must be different people." Locally and in the demo, it stays the "reviewer is also an admin" warning above.
 - **Changing the follow-up owner** after a flag exists moves the open flag to the new owner. The old owner loses access to the student's results. A confirmation dialog explains this.
 - **Unassigned roles:** the row reads "Not assigned. Required before Form A can be sent." Screens and messages that would name this person use the role label instead ("your manager").
 
 ### A3 Bank: material & topics (F1, F2)
 
 Layout: one card per topic. Above the cards: *Add document* and the setting *Questions per topic per form* (a 3-5 selector, default 4 (decision 2), locked after publish).
+
+*Round 1 (`AI_ENABLED=false`):* the drafting controls (*Draft questions*, *Draft 5 more*), the consent dialog and the "AI drafting isn't set up" warning are hidden. The page says: "Questions for this round are written by the pilot team and loaded for review." Everything else below is unchanged. The drafting items below apply to round 2 / when AI_ENABLED.
 
 Each topic card shows:
 - Its documents (name, version date) with *Remove*. Removing a document does not delete drafts already made from it. They stay in review, and their source passage is kept.
@@ -207,7 +217,7 @@ Each topic card shows:
 **States**
 - *Empty:* "No material yet. Add the onboarding documents you want the quiz to be based on. Only what you add here is used. Nothing is taken from the web." Button: *Add document*.
 - *A topic with no documents* (if all its documents were removed): the topic card is removed. Its drafts stay in review.
-- *AI provider not set up:* the drafting buttons are disabled, with the text "AI drafting isn't set up yet. The provider must be approved first."
+- *AI provider not set up (round 2 / when AI_ENABLED):* the drafting buttons are disabled, with the text "AI drafting isn't set up yet. The provider must be approved first."
 - *Drafting in progress:* a per-topic status that the screen reader announces. "You can leave this page. Drafting continues."
 - **AI drafting failed (the whole topic):** "Drafting failed for [topic]. [Short reason: service unavailable / timed out / document too long.] Nothing was saved." Button: *Try again*.
 - **Partial or invalid output:** drafts with no answer, not exactly 4 options, or a source passage that cannot be found word for word in the uploaded text are discarded before review. The card shows: "2 drafts were discarded because they didn't quote your material correctly." Discarded drafts do not count towards M3 but are counted in the export (see A6).
@@ -320,7 +330,7 @@ States:
 
 ### V3 Question statistics (anonymised; §6, M3)
 
-- **Review outcomes** (always shown): the same M3 figures as on A1, broken down by topic.
+- **Review outcomes** (always shown): the same M3 figures as on A1, broken down by topic. In round 1, the same round-1 treatment as A1 section 4 applies: counts only, with no rewrite-rate or "kill line" copy.
 - **Answer statistics per question** (percent correct, and how often each option was chosen) are shown only for questions that at least 5 different people have answered (decision 1). Below that: "Not shown: fewer than 5 people have answered this question. Showing it would identify them." In the n=1 pilot this message appears for every question.
 - No names, attempt dates or per-person data appear on this screen, for any role.
 
@@ -434,7 +444,9 @@ Messages contain no scores (only topic names), so a forwarded email reveals litt
 
 All copy is in English (decision 5).
 
-### 7.1 Student notice (T2): draft for HR approval
+### 7.1 Student notice (T2): version 2, pending HR approval
+
+Round 1 uses **notice version 2** (`NOTICE_VERSION = 2`, text in `worker/lib/notice.ts`). It makes no AI claims. It awaits HR approval, and the HR sign-off on A1 must be recorded for version 2 before Form A can be sent.
 
 > **Before you start: what this knowledge check is for**
 >
@@ -454,16 +466,18 @@ All copy is in English (decision 5).
 >
 > **For how long:** until [date], which is 30 days after the pilot review. Then it is deleted.
 >
-> **AI:** the questions were drafted by an AI tool from our onboarding documents and then checked by a person. The AI tool never sees your name or your answers.
+> **How the questions were made:** Our team wrote the questions from our onboarding documents, and a named reviewer checked every question before it was used. No AI tool is used in this round.
 >
 > **Questions, or want your data deleted?** Contact [name / HR contact].
 >
 > [ Take part ]  [ I'd rather not ]
 
+*Round 2 / when AI_ENABLED only (version 1 wording, not shown in round 1), in place of "How the questions were made":* "**AI:** the questions were drafted by an AI tool from our onboarding documents and then checked by a person. The AI tool never sees your name or your answers." Using it again needs a new notice version and HR sign-off.
+
 Rules for filling the placeholders:
 - Placeholders for unnamed roles fall back to role labels.
 - **Role overlap (decision 7):** if the reviewer is also the manager or an admin, drop the sentence "[Reviewer name], who checks the questions, doesn't see your name or your answers." That person is already listed under their other role, and the sentence would be false.
-- The notice cannot be finalised until HR signs off and the names are known (section 12.3).
+- The notice cannot be used until HR approves version 2 (section 12.3).
 
 ### 7.2 Framing rules (for every student- and manager-facing string)
 
@@ -490,11 +504,11 @@ The internal UI (A-, V- and M-screens) may use "flag" and "threshold". The stude
 | # | Case | Handling |
 |---|---|---|
 | E1 | A role is not yet named | The readiness item stays open, *Send Form A* is disabled, and copy falls back to role labels (A1, A2) |
-| E2 | The AI provider is not approved or configured | Drafting is disabled with a reason (A3). Everything else, including uploading material, still works |
+| E2 | The AI provider is not approved or configured (round 2 / when AI_ENABLED) | Drafting is disabled with a reason (A3). Everything else, including uploading material, still works. In round 1 this does not apply (A1 readiness) |
 | E3 | HR sign-off is not recorded | *Send Form A* is disabled (A1). No student result can be collected (§6 gate) |
 | E4 | Drafting fails, or returns ungrounded or malformed output | Per-topic error and retry. Invalid drafts are discarded and counted (A3) |
 | E5 | All drafts for a topic are rejected | Draft more, add material, or leave the topic out of the version (A3, A4) |
-| E6 | Rewrite rate above 50% | Informational K3 banner on A1 (not blocking) |
+| E6 | Rewrite rate above 50% (round 2 / when AI_ENABLED) | Informational K3 banner on A1 (not blocking). In round 1, K3 is suspended and the banner is hidden (A1 section 4) |
 | E7 | **No topic below the threshold on Form A** | Valid pilot data (decision 8). No flag is created. A1 shows "Flags: none" and "Follow-up: not needed". T1 shows "No topics need a follow-up" and opens Form B straight away as an optional second check, due within 10 working days. The flag-and-follow-up path is then not exercised in the pilot |
 | E8 | The student declines | Recorded. Admins see it on A1. The manager is not told, and M1 shows the same "hasn't taken check 1 yet" text as for a student who has not started (decision 6). The student can change their mind from T1 |
 | E9 | The student abandons the quiz midway | Nothing is stored. The form stays available (T3) |
@@ -577,25 +591,28 @@ Target WCAG 2.2 AA for all screens, and especially for T2, T3 and R1, which a ne
 | 2 | Questions per topic (P3) | Default 4 per topic per form. At the 70% threshold, a topic is flagged at 2 or more wrong. The 3-5 selector stays (F4), with 3 as the minimum | Flow 1, A3, A4, R2 note |
 | 3 | A confirmed wrong question (P9) | Handled in the export analysis, not in the app. No rescoring or "exclude question" action. Scores shown in the app are not changed | A4 scope, A6, R1 footer, E13, E14, D14 |
 | 4 | Material changes mid-pilot (P10) | The onboarding material and the bank are frozen for the 90-day pilot, with one published version | Flow 1 step 8, A3, A4, E14, D10 |
-| 5 | App language | English: the UI, the notice, the messages and the AI-drafted questions | Flow 1 step 2, §5 conventions, §6, §7, §9 |
+| 5 | App language | English: the UI, the notice, the messages and the questions | Flow 1 step 2, §5 conventions, §6, §7, §9 |
 | 6 | Telling the manager about a decline (D11) | The manager is not told. Only the admins (bank owner and CPO) see it. The notice says so | Flow 2, §2.2, §6, §7.1, M1, E8 |
 
 ### 12.2 Designed defaults, accepted by the CPO
 
 | # | Question | Decision | Where it applies |
 |---|---|---|---|
-| 7 | Reviewer who is also the manager or an admin | A warning on A2, not a blocker. At n=1 the overlap may be unavoidable. The notice drops the "reviewer doesn't see your answers" sentence in that case | §2.3, A2, §7.1 |
+| 7 | Reviewer who is also the manager or an admin | A warning on A2, not a blocker. At n=1 the overlap may be unavoidable. The notice drops the "reviewer doesn't see your answers" sentence in that case. Exception (rev. 3): bank owner = reviewer is blocked in production (A2) | §2.3, A2, §7.1 |
 | 8 | Nothing flagged on Form A | Valid pilot data. No flag, and Form B still opens as an optional second check. The flag-and-follow-up path is then not exercised. Whether that calls for `/checkpoint` is for the CPO to judge at the 90-day review. There is no extra app behaviour | Flow 2 step 7, A1, T1, §6, E7 |
 | 9 | The student seeing follow-up notes | No. The student sees the topics, the due date and "done [date]". The note is visible to the follow-up owner and the admins only, and M2 says so | §2.2, Flow 3, T1, M2 |
 | 10 | Form B unlock | Automatic once every weak topic has a logged follow-up | Flow 3 step 5, M2, D7 |
 | 11 | Working days and public holidays | Monday to Friday. Public holidays are not excluded. No holiday calendar | Flow 3, §5 conventions, E17 |
 | 12 | An "I don't know" option | Not included. Every question has exactly 4 options (F2). The guessing effect is noted in the M2 analysis | T3, §10 cuts |
 
-### 12.3 Still open (carried from the PRD; the design handles them as states)
+### 12.3 Open and resolved items (updated in rev. 3)
 
-- **Named people for each role** (PRD Q1). None are named yet. PRD §7 makes this a `/checkpoint` trigger if they are not named before `/design` completes. Handled by A1 readiness, A2, and role-label fallbacks in copy (E1).
-- **The AI provider** (PRD Q2). Handled by the "AI provider set up" readiness item and disabled drafting (E2).
-- **HR sign-off, with the final notice text** (§6). §7.1 is a draft for HR, including the decline sentence (decision 6). Handled by the "HR sign-off recorded" readiness item, which blocks *Send Form A* (E3).
+- **Named people for each role** (PRD Q1): resolved. S = manager / follow-up owner, N = bank owner, E = reviewer.
+- **The AI provider** (PRD Q2): resolved. Anthropic, paused for round 1 (`AI_ENABLED=false`).
+- **Time zone:** resolved. Fixed GMT+2 all year (`Etc/GMT-2`).
+- **HR approval of notice version 2** (§6, §7.1): still open. Handled by the "HR sign-off recorded" readiness item, which blocks *Send Form A* (E3).
+
+A separate demo deployment with synthetic data exists. It is not part of the pilot.
 
 ---
 
@@ -608,3 +625,16 @@ Requirements on `/plan` that come from this design: draft content and published 
 ---
 
 **Post-approval changes:** 2026-09-29, CPO decision 5 at `/plan`: A6 no longer says it keeps "anonymised question statistics". The delete panel now says it keeps "review outcomes (these contain no names)", because at n=1 answer statistics identify the student. V3 computes them live, so they are deleted with the person.
+
+### Rev. 3 changelog (2026-09-29)
+
+Minimum changes for the CPO's decisions after the rev. 2 approval. No screens were added, removed or restructured.
+
+- **Round 1 without AI:** added a short round-1 note at the top and a one-paragraph round-1 note in Flow 1 (JSON file, importer script, same source-quote check, questions land as waiting for review, reviewer gate unchanged). AI-only parts are labelled "round 2 / when AI_ENABLED".
+- **A1:** in round 1 the readiness row reads "AI drafting: off for this round" with no action, and Send Form A no longer needs AI. Section 4 is titled "Review outcomes" (a diagnostic of reviewer disagreement), with the K3 banner and "kill line" copy hidden. V3, E2 and E6 were aligned.
+- **A3:** in round 1 the drafting controls, consent dialog and "isn't set up" warning are hidden, and the page says "Questions for this round are written by the pilot team and loaded for review."
+- **§7.1 notice:** now version 2, with the final "How the questions were made" paragraph (pending HR approval). The "AI:" paragraph is kept as round 2 only.
+- **A2:** bank owner ≠ reviewer is enforced in production only, with a blocking error message. Locally and in the demo it stays a warning. Decision 7 and §2.1/§2.3 got a one-line pointer.
+- **§12.3:** roles S/N/E, the AI provider (Anthropic, paused) and the time zone (fixed GMT+2) are marked resolved. HR approval of notice version 2 is still open. The demo deployment is noted.
+- **Decision 5:** "AI-drafted questions" changed to "questions".
+- **Header:** marked rev. 3, and the AI provider was removed from the open items.
