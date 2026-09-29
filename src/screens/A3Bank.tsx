@@ -1,5 +1,5 @@
 // A3 Bank: material & topics (F1, F2).
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api, ok, ApiError } from "../api";
 import { Page, Skeleton, LoadError, ConfirmDialog, LiveRegion, StatusLabel } from "../components/ui";
 import { useLoad } from "../lib/useLoad";
@@ -16,6 +16,16 @@ export function A3Bank() {
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<{ id: number; name: string } | null>(null);
   const [msg, setMsg] = useState("");
+  const [consentFor, setConsentFor] = useState<{ id: number; kind: "initial" | "more" } | null>(null);
+  const [startError, setStartError] = useState<Record<number, string>>({});
+
+  // Drafting runs in the background; check progress every 3 seconds while any topic is drafting.
+  const anyRunning = !!data?.topics.some((t) => t.run?.status === "running");
+  useEffect(() => {
+    if (!anyRunning) return;
+    const h = setInterval(() => void reload(), 3000);
+    return () => clearInterval(h);
+  }, [anyRunning, reload]);
 
   if (loading && !data) return <Page title="Bank"><Skeleton lines={8} /></Page>;
   if (error || !data) return <Page title="Bank"><LoadError message="Couldn't load the bank. Reload the page." onRetry={reload} /></Page>;
@@ -29,6 +39,18 @@ export function A3Bank() {
       await reload();
     } catch (e) {
       setMsg(e instanceof ApiError ? e.message : "Not saved. Try again.");
+    }
+  }
+
+  async function startDraft(id: number, kind: "initial" | "more", consented = false) {
+    if (!data!.consentGiven && !consented) return setConsentFor({ id, kind });
+    setStartError((e) => ({ ...e, [id]: "" }));
+    try {
+      if (consented) await ok(api.bank.consent.$post());
+      await ok(api.topics[":id"].drafts.$post({ param: { id: String(id) }, json: { kind } }));
+      await reload();
+    } catch (e) {
+      setStartError((x) => ({ ...x, [id]: e instanceof ApiError ? e.message : "Drafting couldn't start. Try again." }));
     }
   }
 
@@ -92,7 +114,14 @@ export function A3Bank() {
         </div>
       ) : (
         data.topics.map((t) => (
-          <TopicCard key={t.id} topic={t} data={data} locked={locked} onRemove={setRemoving} />
+          <TopicCard
+            key={t.id}
+            topic={t}
+            data={data}
+            locked={locked}
+            onRemove={setRemoving}
+            drafting={<DraftControls topic={t} data={data} locked={locked} error={startError[t.id]} onStart={startDraft} />}
+          />
         ))
       )}
 
@@ -105,6 +134,33 @@ export function A3Bank() {
           await reload();
         }}
       />
+      <ConfirmDialog
+        open={!!consentFor}
+        title="Before the first draft"
+        onClose={() => setConsentFor(null)}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                const c = consentFor!;
+                setConsentFor(null);
+                void startDraft(c.id, c.kind, true);
+              }}
+            >
+              Continue
+            </button>
+            <button type="button" className="secondary" onClick={() => setConsentFor(null)}>
+              Cancel
+            </button>
+          </>
+        }
+      >
+        <p>
+          Drafting sends the text of this topic's documents to {data.providerName}. Only onboarding material is sent. No
+          names, answers or results are ever sent. Only continue if these documents are cleared for this provider.
+        </p>
+      </ConfirmDialog>
       <ConfirmDialog
         open={!!removing}
         title={`Remove ${removing?.name ?? "document"}?`}
@@ -183,3 +239,57 @@ export function TopicCard({
     </section>
   );
 }
+
+function DraftControls({
+  topic: t,
+  data,
+  locked,
+  error,
+  onStart,
+}: {
+  topic: BankData["topics"][number];
+  data: BankData;
+  locked: boolean;
+  error?: string;
+  onStart: (id: number, kind: "initial" | "more") => void;
+}) {
+  const run = t.run;
+  const drafted = t.counts.total > 0;
+  let status: ReactNode = null;
+  if (run?.status === "running") status = <>Drafting… You can leave this page. Drafting continues.</>;
+  else if (run?.status === "failed")
+    status = (
+      <>
+        Drafting failed for {t.name}. {run.errorReason ? capitalise(run.errorReason) + "." : ""} Nothing was saved.
+      </>
+    );
+  else if (run?.status === "done")
+    status = (
+      <>
+        {run.createdCount} drafts ready for review.
+        {run.discardedCount > 0 &&
+          ` ${run.discardedCount} ${run.discardedCount === 1 ? "draft was" : "drafts were"} discarded because ${run.discardedCount === 1 ? "it" : "they"} didn't quote your material correctly.`}
+      </>
+    );
+  if (locked) return null;
+  const disabled = !data.aiSetUp || run?.status === "running";
+  const failed = run?.status === "failed";
+  const kind: "initial" | "more" = drafted ? "more" : "initial";
+  const label = failed ? "Try again" : drafted ? "Draft 5 more" : "Draft questions";
+  return (
+    <>
+      <LiveRegion>{status}</LiveRegion>
+      {error && <p className="error" role="alert">{error}</p>}
+      {(
+        <p>
+          <button type="button" className={drafted && !failed ? "secondary" : undefined} disabled={disabled} onClick={() => onStart(t.id, kind)}>
+            {label}
+          </button>
+          {!data.aiSetUp && <span className="muted"> AI drafting isn't set up yet. The provider must be approved first.</span>}
+        </p>
+      )}
+    </>
+  );
+}
+
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

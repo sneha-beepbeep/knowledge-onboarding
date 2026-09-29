@@ -20,6 +20,10 @@
       "migrations_dir": "migrations"
     }
   ],
+  // Background AI drafting (technical plan §4, decision 4).
+  "workflows": [
+    { "name": "draft-topic", "binding": "DRAFT_WORKFLOW", "class_name": "DraftTopicWorkflow" }
+  ],
   "vars": {
     // "local" enables AI_MOCK (from .dev.vars). Production must stay "production".
     "ENVIRONMENT": "production",
