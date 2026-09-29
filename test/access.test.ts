@@ -74,6 +74,14 @@ const BUILT = new Set([
   "POST /api/review/questions/0/undo",
   "GET /api/stats",
   "GET /api/publish",
+  "GET /api/my/checks",
+  "GET /api/my/notice",
+  "POST /api/my/participation",
+  "GET /api/my/forms/b",
+  "POST /api/my/forms/b/attempt",
+  "GET /api/attempts/0",
+  "GET /api/comparison/0",
+  "POST /api/pilot/form-a/sent",
 ]);
 const built = (label: string) => BUILT.has(label);
 
@@ -110,7 +118,7 @@ describe("access matrix", () => {
     });
   }
 
-  it.skipIf(!built("GET /api/attempts"))("a student can't reach another person's results", async () => {
+  it.skipIf(!built("GET /api/attempts/0"))("a student can't reach another person's results", async () => {
     const other = await call("GET", `/api/attempts/${ids.attemptId + 999}`, { token: w.tokens.student });
     const cmp = await call("GET", `/api/comparison/${w.ids.fuo}`, { token: w.tokens.student });
     expect(other.status).toBe(404);

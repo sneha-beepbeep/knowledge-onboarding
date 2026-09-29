@@ -1,7 +1,8 @@
 // A1 Pilot overview (admin home).
 import { useState, type FormEvent } from "react";
 import { api, ok, ApiError } from "../api";
-import { Page, Skeleton, LoadError, StatusLabel, ErrorSummary, InlineError, LiveRegion, DataTable } from "../components/ui";
+import { Page, Skeleton, LoadError, StatusLabel, ErrorSummary, InlineError, LiveRegion, DataTable, ConfirmDialog } from "../components/ui";
+import { CopyLink } from "../components/CopyLink";
 import { useLoad } from "../lib/useLoad";
 import { Link } from "../lib/router";
 import { formatDate } from "../../shared/dates";
@@ -24,6 +25,7 @@ export function A1Pilot() {
       <p>
         <Link to="/people">People & roles</Link>
       </p>
+      <SendFormA data={data} reload={reload} />
       <Readiness data={data} reload={reload} />
     </Page>
   );
@@ -140,5 +142,95 @@ function HrSignoff({ today, onSaved }: { today: string; onSaved: () => Promise<v
       </div>
       <LiveRegion>{msg}</LiveRegion>
     </form>
+  );
+}
+
+/** A5 Send Form A (dialog on A1; F5, C6, §6 gate). No email: copy the link, then Mark as sent. */
+function SendFormA({ data, reload }: { data: Data; reload: () => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const student = data.student?.name ?? "the student";
+  if (!data.readiness.complete)
+    return (
+      <p className="card">
+        <StatusLabel tone="wait">Complete the readiness checklist to send Form A.</StatusLabel>
+      </p>
+    );
+  async function createLink() {
+    setErr(null);
+    try {
+      const r = await ok(api.pilot["form-a"].link.$post());
+      setUrl(r.url);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "The link couldn't be created. Try again.");
+    }
+  }
+  async function markSent() {
+    try {
+      await ok(api.pilot["form-a"].sent.$post());
+      close();
+      await reload();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "Not saved. Try again.");
+    }
+  }
+  function close() {
+    setOpen(false);
+    setUrl(null);
+    setErr(null);
+  }
+  const again = !!data.formASent;
+  return (
+    <section className="card" aria-labelledby="send-h">
+      <h2 id="send-h">Form A</h2>
+      {again && <p>Form A sent {formatDate(data.formASent!)}.</p>}
+      <button type="button" className={again ? "secondary" : undefined} onClick={() => setOpen(true)}>
+        {again ? "Copy Form A link again" : `Send Form A to ${student}`}
+      </button>
+      <ConfirmDialog
+        open={open}
+        title={`Send Form A to ${student}?`}
+        onClose={close}
+        actions={
+          url ? (
+            <>
+              {!again && (
+                <button type="button" onClick={markSent}>
+                  Mark as sent
+                </button>
+              )}
+              <button type="button" className="secondary" onClick={close}>
+                {again ? "Done" : "Cancel"}
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={createLink}>
+                {again ? "Create a new link" : "Create link"}
+              </button>
+              <button type="button" className="secondary" onClick={close}>
+                Cancel
+              </button>
+            </>
+          )
+        }
+      >
+        <p>They'll first see the notice explaining what the check is for and that taking part is voluntary.</p>
+        {again && <p className="hint">This creates a new link. The link you sent before stops working.</p>}
+        {err && (
+          <p className="error" role="alert">
+            {err}
+          </p>
+        )}
+        {url && (
+          <>
+            <p>Copy this link and send it to {student} the way you normally would:</p>
+            <CopyLink url={url} label={`Form A link for ${student}`} />
+            <p className="hint">This link signs {student} in. Send it only to them, privately.</p>
+          </>
+        )}
+      </ConfirmDialog>
+    </section>
   );
 }

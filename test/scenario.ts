@@ -59,15 +59,15 @@ export async function seedLoop(w: World, opts: { submitA?: boolean } = {}) {
       ...ids.slice(4, 8).map((qid, i) => ({ versionId: v.id, form: "B" as const, topicId: t.id, questionId: qid, position: i })),
     ]);
   }
-  await d.insert(pilot).values({
-    id: 1,
+  const pilotRow = {
     hrSignoffDate: "2026-09-20",
     hrSignoffBy: "HR Contact",
     hrNoticeVersion: NOTICE_VERSION,
     hrRecordedAt: now,
     formASentAt: now,
     formASentBy: w.ids.bank,
-  });
+  };
+  await d.insert(pilot).values({ id: 1, ...pilotRow }).onConflictDoUpdate({ target: pilot.id, set: pilotRow });
   await d.insert(participation).values({ personId: w.ids.student, noticeVersion: NOTICE_VERSION, choice: "take_part", recordedAt: now });
 
   let attemptId = 0;

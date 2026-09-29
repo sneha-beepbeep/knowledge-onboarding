@@ -6,6 +6,8 @@ import { A2People } from "./screens/A2People";
 import { A3Bank } from "./screens/A3Bank";
 import { V1Queue, V2Question, V3Stats } from "./screens/Review";
 import { A4Publish } from "./screens/A4Publish";
+import { T1Home, T2Notice, T3Quiz } from "./screens/Student";
+import { R1Results } from "./screens/Results";
 
 const ADMIN = ["bank_owner", "cpo"] as const;
 
@@ -17,4 +19,8 @@ export const routes: RouteDef[] = [
   { path: "/review", roles: ["reviewer", ...ADMIN], component: V1Queue },
   { path: "/review/stats", roles: ["reviewer", ...ADMIN], component: V3Stats },
   { path: "/review/:id", roles: ["reviewer", ...ADMIN], component: V2Question },
+  { path: "/checks", roles: ["student"], component: T1Home },
+  { path: "/notice", roles: ["student"], component: T2Notice, bare: true },
+  { path: "/check/:form", roles: ["student"], component: T3Quiz },
+  { path: "/results/:attemptId", roles: ["student", "follow_up_owner", ...ADMIN], component: R1Results },
 ];

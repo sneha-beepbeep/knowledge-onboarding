@@ -3,8 +3,8 @@
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 import type { AppEnv } from "../types";
-import { ADMIN, allow, isCpo } from "../auth";
-import { body, badRequest, str } from "../lib/http";
+import { ADMIN, allow, isCpo, issueLink, linkUrl } from "../auth";
+import { body, badRequest, conflict, str } from "../lib/http";
 import { dateOf, getDb, getPilot, today } from "../lib/state";
 import { readiness } from "../lib/readiness";
 import { NOTICE_VERSION } from "../lib/notice";
@@ -31,10 +31,29 @@ export const pilotRoutes = new Hono<AppEnv>()
           currentNoticeVersion: NOTICE_VERSION,
         },
         student: r.roles.student ? { id: r.roles.student.personId, name: r.roles.student.name } : null,
+        formASent: r.pilot.formASentAt ? dateOf(c.env, r.pilot.formASentAt) : null,
         today: today(c.env),
       },
       200,
     );
+  })
+
+  // A5: creates the student's sign-in link, which is the Form A link. Replaces any earlier link.
+  .post("/pilot/form-a/link", allow(...ADMIN), async (c) => {
+    const db = getDb(c.env);
+    const r = await readiness(db, c.env);
+    if (!r.complete || !r.roles.student) return conflict(c, "Complete the readiness checklist to send Form A.");
+    const token = await issueLink(db, r.roles.student.personId);
+    return c.json({ url: linkUrl(c, token), studentName: r.roles.student.name, alreadySent: !!r.pilot.formASentAt }, 200);
+  })
+
+  .post("/pilot/form-a/sent", allow(...ADMIN), async (c) => {
+    const db = getDb(c.env);
+    const r = await readiness(db, c.env);
+    if (!r.complete) return conflict(c, "Complete the readiness checklist to send Form A.");
+    if (!r.pilot.formASentAt)
+      await db.update(pilot).set({ formASentAt: Date.now(), formASentBy: c.get("me").personId }).where(eq(pilot.id, 1));
+    return c.json({ ok: true }, 200);
   })
 
   // HR sign-off is a record only; the approval happens outside the app (design spec Flow 0).
