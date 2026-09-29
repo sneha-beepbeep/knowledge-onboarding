@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import type { AppEnv } from "./types";
+import { requireSession } from "./auth";
 import { authRoutes } from "./routes/auth";
+import { pilotRoutes } from "./routes/pilot";
+import { peopleRoutes } from "./routes/people";
 
 // `Env` is generated from wrangler.jsonc by `npm run cf-typegen`.
 const app = new Hono<AppEnv>().basePath("/api");
@@ -11,7 +14,21 @@ app.onError((err, c) => {
   return c.json({ error: "Something went wrong. Try again." }, 500);
 });
 
-const routes = app.get("/health", (c) => c.json({ ok: true })).route("/", authRoutes);
+// Every route needs a valid session except these.
+const PUBLIC = new Set(["/api/health", "/api/auth/bootstrap", "/api/auth/exchange"]);
+app.use("*", async (c, next) => {
+  if (PUBLIC.has(new URL(c.req.url).pathname)) return next();
+  return requireSession(c, next);
+});
+
+const routes = app
+  .get("/health", (c) => c.json({ ok: true }))
+  .route("/", authRoutes)
+  .route("/", pilotRoutes)
+  .route("/", peopleRoutes);
+
+// Unknown API paths get the same uniform 404 as access failures.
+app.notFound((c) => c.json({ error: "This page isn't available to you." }, 404));
 
 // The frontend imports this type to get a fully typed API client (see src/api.ts).
 export type AppType = typeof routes;

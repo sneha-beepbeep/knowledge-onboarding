@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { and, eq, sql } from "drizzle-orm";
 import type { AppEnv } from "../types";
 import { body, badRequest, notAvailable, str } from "../lib/http";
-import { createSession, exchangeLink, has, requireSession, safeEqual } from "../auth";
+import { createSession, exchangeLink, has, safeEqual } from "../auth";
 import { getDb, getRoleMap } from "../lib/state";
 import { people, questions, roleAssignments, sessions } from "../db/schema";
 import { openFlagCount } from "../lib/flags";
@@ -40,12 +40,12 @@ export const authRoutes = new Hono<AppEnv>()
     return c.json({ sessionToken }, 200);
   })
 
-  .post("/auth/signout", requireSession, async (c) => {
+  .post("/auth/signout", async (c) => {
     await getDb(c.env).delete(sessions).where(eq(sessions.id, c.get("me").sessionId));
     return c.json({ ok: true }, 200);
   })
 
-  .get("/me", requireSession, async (c) => {
+  .get("/me", async (c) => {
     const me = c.get("me");
     const db = getDb(c.env);
     const roleMap = await getRoleMap(db);

@@ -56,8 +56,15 @@ const MATRIX: Row[] = [
 ];
 
 // Routes are added to the build step by step; rows for routes not built yet are todo.
-const BUILT = ["/api/me"];
-const built = (label: string) => BUILT.some((b) => label.split(" ")[1].startsWith(b));
+const BUILT = new Set([
+  "GET /api/me",
+  "GET /api/pilot",
+  "POST /api/pilot/hr-signoff",
+  "GET /api/roles",
+  "PUT /api/roles/reviewer",
+  "PUT /api/roles/cpo",
+]);
+const built = (label: string) => BUILT.has(label);
 
 describe("access matrix", () => {
   let w: World;
