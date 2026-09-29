@@ -1,0 +1,51 @@
+{
+  "format": "knowledge-check-import/1",
+  "documents": [
+    {
+      "key": "expenses",
+      "name": "Expense claims: quick guide (example)",
+      "versionDate": "2026-09-01",
+      "topics": ["Expense claims (example)", "Expense approval (example)"],
+      "textFile": "example-document.txt"
+    }
+  ],
+  "questions": [
+    {
+      "topic": "Expense claims (example)",
+      "document": "expenses",
+      "question": "Within how many days of the purchase must you submit an expense claim?",
+      "options": ["7 days", "14 days", "30 days", "90 days"],
+      "correctIndex": 2,
+      "quote": "Submit every expense claim in the expense tool within 30 days of the purchase."
+    },
+    {
+      "topic": "Expense claims (example)",
+      "document": "expenses",
+      "question": "Which of these is accepted as a receipt for an expense claim?",
+      "options": [
+        "A photo or scan of the itemised receipt",
+        "A card statement on its own",
+        "A note describing the purchase",
+        "An email from the shop confirming payment was made"
+      ],
+      "correctIndex": 0,
+      "quote": "Attach a photo or scan of the itemised receipt to each claim. A card statement on its own is not accepted as a receipt."
+    },
+    {
+      "topic": "Expense approval (example)",
+      "document": "expenses",
+      "question": "Who must approve a claim of 800 euros?",
+      "options": ["Only your team lead", "Your team lead and the Finance team", "Only the Finance team", "Nobody, it is paid automatically"],
+      "correctIndex": 1,
+      "quote": "Your team lead approves claims up to 500 euros. Claims above 500 euros also need approval from the Finance team."
+    },
+    {
+      "topic": "Expense approval (example)",
+      "document": "expenses",
+      "question": "Your claim is approved on the 25th of the month. When is it paid?",
+      "options": ["The same day", "Within a week", "With this month's salary run", "With the following month's salary run"],
+      "correctIndex": 3,
+      "quote": "Claims approved after the 20th of the month are paid in the following month."
+    }
+  ]
+}

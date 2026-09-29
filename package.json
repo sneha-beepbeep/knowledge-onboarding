@@ -15,7 +15,8 @@
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.jsonc",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
     "test": "vitest run",
-    "seed:demo": "tsx scripts/seed-slack-demo.mjs --local"
+    "seed:demo": "tsx scripts/seed-slack-demo.mjs --local",
+    "import:questions": "tsx scripts/import-questions.mjs --local"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.3",

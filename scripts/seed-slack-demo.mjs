@@ -11,19 +11,17 @@
 // (worker/ai/validate.ts). Local: `wrangler d1 execute DB --local`, the same local
 // D1 that `npm run dev` uses. Remote: hard-restricted to the demo database name,
 // through wrangler.jsonc env.demo; any other remote database is refused.
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEMO_DB, DEMO_ENV, demoProblems, parseJsonc } from "./lib/wrangler-config.mjs";
-import { validateDraft } from "../worker/ai/validate.ts";
-import { MAX_DOC_CHARS, MAX_NAME, MAX_TOPIC_NAME } from "../shared/limits.ts";
+import { makeD1 } from "./lib/d1-runner.mjs";
+import { EMPTY_STATE, IMPORT_FORMAT, STATE_SQL, importSql, planImport, sqlLit, stateFromRows } from "./lib/bank-import.ts";
 import {
   DEMO_DOC_NAME,
   DEMO_DOC_SOURCE,
-  DEMO_DOC_TEXT,
   DEMO_DOC_VERSION_DATE,
+  DEMO_DOC_TEXT,
   DEMO_MODEL,
   DEMO_QUESTIONS,
   DEMO_TOPICS,
@@ -59,49 +57,18 @@ if (REMOTE) {
   if (problems.length) die("wrangler.jsonc env.demo is not a safe demo config:\n- " + problems.join("\n- "));
 }
 
-// ---- wrangler d1 ----------------------------------------------------------------
-// Local: banner off (it runs an npm update check) and metrics off, so no network calls.
+// ---- wrangler d1 (shared runner, scripts/lib/d1-runner.mjs) ---------------------------
 // --config pins the source config, so a leftover demo build (.wrangler/deploy) can't
 // redirect the local seed to a different local database.
-const WRANGLER_ENV = { ...process.env, WRANGLER_SEND_METRICS: "false", WRANGLER_HIDE_BANNER: "true", CI: "1" };
-const WRANGLER = join(ROOT, "node_modules", ".bin", "wrangler");
 const TARGET = REMOTE
   ? [DEMO_DB, "--remote", "--config", "wrangler.jsonc", "--env", DEMO_ENV]
   : ["DB", "--local", "--config", "wrangler.jsonc"];
 const where = REMOTE ? `remote ${DEMO_DB}` : "local";
 if (REMOTE || DRY) console.log(`Seeding target: ${where}${DRY ? " (dry run: nothing is executed)" : ""}`);
-
-function d1(extra, { parse = true } = {}) {
-  const argv = ["d1", "execute", ...TARGET, "--json", ...extra];
-  if (REMOTE || DRY) {
-    const shown = argv.map((a, i) => (argv[i - 1] === "--command" ? `'${a.replace(/\s+/g, " ").slice(0, 60)}...'` : a));
-    console.log(`  $ npx wrangler ${shown.join(" ")}`);
-  }
-  if (DRY) return [{ results: [] }];
-  const r = spawnSync(WRANGLER, argv, {
-    cwd: ROOT,
-    env: WRANGLER_ENV,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  if (r.status !== 0) die(`wrangler d1 execute (${where}) failed:\n${r.stderr || r.stdout}`);
-  if (!parse) return null;
-  const start = r.stdout.indexOf("[");
-  return JSON.parse(r.stdout.slice(start));
-}
-const query = (sql) => d1(["--command", sql])[0].results;
-function execFile(sql) {
-  const dir = mkdtempSync(join(tmpdir(), "seed-demo-"));
-  const file = join(dir, "seed.sql");
-  try {
-    writeFileSync(file, sql);
-    // Remote --file output is an import report, not rows, so it isn't parsed.
-    d1(["--file", DRY ? "<seed.sql>" : file, "--yes"], { parse: false });
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
-const lit = (v) => (v === null || v === undefined ? "NULL" : typeof v === "number" ? String(v) : `'${String(v).replace(/'/g, "''")}'`);
+const d1 = makeD1({ root: ROOT, argv: TARGET, where, show: REMOTE, dry: DRY, die });
+const query = d1.query;
+const execFile = d1.execSql;
+const lit = sqlLit;
 
 // ---- state checks ------------------------------------------------------------
 const topicList = DEMO_TOPICS.map(lit).join(", ");
@@ -141,46 +108,28 @@ seed();
 
 // ---- seed --------------------------------------------------------------------
 function seed() {
-  // Same shape and limits as POST /api/documents (A3a).
-  const text = DEMO_DOC_TEXT.replace(/\r\n?/g, "\n").trim();
-  if (text.length > MAX_DOC_CHARS || DEMO_DOC_NAME.length > MAX_NAME || DEMO_TOPICS.some((t) => t.length > MAX_TOPIC_NAME))
-    die("demo document or topic names exceed the app's limits.");
-
-  // Every question goes through the app's own validation and grounding, like the workflow.
-  const docForCheck = { id: 1, name: DEMO_DOC_NAME, versionDate: DEMO_DOC_VERSION_DATE, text };
-  const valid = DEMO_QUESTIONS.map((q, i) => {
-    const v = validateDraft(
-      { question: q.question, options: q.options, correct_index: q.correct_index, document_id: 1, quote: q.quote },
-      [docForCheck],
-    );
-    if (!v.ok) die(`question ${i + 1} (${q.topic}) failed validation: ${v.reason}. Nothing was changed.`);
-    return { topic: q.topic, d: v.draft };
+  // The demo data goes through the same planner as scripts/import-questions.mjs:
+  // A3a's document checks, then validateDraft (validation and grounding) per question.
+  const file = {
+    format: IMPORT_FORMAT,
+    documents: [{ key: "demo", name: DEMO_DOC_NAME, versionDate: DEMO_DOC_VERSION_DATE, topics: [...DEMO_TOPICS], text: DEMO_DOC_TEXT }],
+    questions: DEMO_QUESTIONS.map((q) => ({
+      topic: q.topic,
+      document: "demo",
+      question: q.question,
+      options: q.options,
+      correctIndex: q.correct_index,
+      quote: q.quote,
+    })),
+  };
+  const state = DRY ? EMPTY_STATE : stateFromRows(d1.queryAll(STATE_SQL));
+  const result = planImport(file, state, () => {
+    throw new Error("no text files");
   });
-
-  const now = Date.now();
-  const docId = `(SELECT max(id) FROM documents WHERE name = ${lit(DEMO_DOC_NAME)})`;
-  const topicId = (t) => `(SELECT id FROM topics WHERE name = ${lit(t)})`;
-  const runId = (t) => `(SELECT max(id) FROM draft_runs WHERE model = ${lit(DEMO_MODEL)} AND topic_id = ${topicId(t)})`;
-  const sql = [
-    `INSERT INTO documents (name, version_date, text, char_count, source, created_at) VALUES (${lit(DEMO_DOC_NAME)}, ${lit(DEMO_DOC_VERSION_DATE)}, ${lit(text)}, ${text.length}, ${lit(DEMO_DOC_SOURCE)}, ${now});`,
-    ...DEMO_TOPICS.map((t) => `INSERT INTO topics (name) VALUES (${lit(t)}) ON CONFLICT DO NOTHING;`),
-    ...DEMO_TOPICS.map((t) => `INSERT INTO document_topics (document_id, topic_id) SELECT ${docId}, id FROM topics WHERE name = ${lit(t)};`),
-    // One finished "initial" run per topic, as the workflow leaves it (requested = 2 x 4 + 2).
-    ...DEMO_TOPICS.map((t) => {
-      const n = valid.filter((v) => v.topic === t).length;
-      return `INSERT INTO draft_runs (topic_id, kind, requested, status, created_count, discarded_count, error_reason, model, started_at, finished_at) SELECT id, 'initial', ${n}, 'done', ${n}, 0, NULL, ${lit(DEMO_MODEL)}, ${now}, ${now} FROM topics WHERE name = ${lit(t)};`;
-    }),
-    // Questions stored exactly as the workflow's "validate and save" step stores them.
-    ...valid.map(({ topic, d }) => {
-      const original = JSON.stringify({ text: d.text, options: d.options, correctIndex: d.correctIndex });
-      return (
-        "INSERT INTO questions (topic_id, draft_run_id, document_id, document_name, document_version_date, quote, context_before, context_after, text, options, correct_index, ai_original, status, edit_kind, created_at, updated_at) VALUES (" +
-        [topicId(topic), runId(topic), docId, lit(d.documentName), lit(d.documentVersionDate), lit(d.quote), lit(d.contextBefore), lit(d.contextAfter), lit(d.text), lit(JSON.stringify(d.options)), d.correctIndex, lit(original), "'pending'", "'none'", now, now].join(", ") +
-        ");"
-      );
-    }),
-  ].join("\n");
-  execFile(sql);
+  if (!result.ok) die(`the demo data failed the import checks. Nothing was changed.\n- ${result.errors.join("\n- ")}`);
+  const valid = result.plan.questions;
+  const text = result.plan.docs[0].text;
+  execFile(importSql(result.plan, { now: Date.now(), model: DEMO_MODEL }));
   if (DRY) {
     console.log(`(dry run) Would seed "${DEMO_DOC_NAME}" with ${valid.length} validated questions on ${DEMO_TOPICS.length} topics into the ${where} database.`);
     return;
