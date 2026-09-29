@@ -63,6 +63,7 @@ function Readiness({ data, reload }: { data: Data; reload: () => Promise<void> }
           <th scope="row">Roles named</th>
           <td>{done(r.items.rolesNamed)}</td>
           <td>
+            {r.rolesOverlap && <>The question bank owner and the content reviewer must be different people. </>}
             <Link to="/people">Assign roles</Link>
           </td>
         </tr>

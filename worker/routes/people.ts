@@ -5,7 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { AppEnv } from "../types";
 import { ADMIN, allow, isCpo, issueLink, linkUrl } from "../auth";
 import { body, badRequest, idParam, notAvailable, str } from "../lib/http";
-import { aiEnabled, getDb, getRoleMap, ROLE_LABELS, type RoleMap } from "../lib/state";
+import { aiEnabled, getDb, getRoleMap, isProduction, ROLE_LABELS, type RoleMap } from "../lib/state";
 import { flags, people, roleAssignments, ROLES, type Role } from "../db/schema";
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
@@ -21,6 +21,10 @@ const BANK_OWNER_AI_OFF = "Uploads material, writes the questions for the pilot 
 
 export const roleDescription = (role: Role, ai: boolean) =>
   role === "bank_owner" && !ai ? BANK_OWNER_AI_OFF : ROLE_DESCRIPTIONS[role];
+
+/** PRD rev. 3: in production the bank owner and the reviewer must be different people. */
+export const SEPARATION_ERROR =
+  "The question bank owner and the content reviewer must be different people, so the reviewer isn't checking their own questions. Choose someone else.";
 
 const OVERLAP_NOTE = "The student notice will list this person once, under their other role.";
 
@@ -102,6 +106,10 @@ export const peopleRoutes = new Hono<AppEnv>()
       }
 
       const before = await getRoleMap(db);
+      if (isProduction(c.env) && (role === "bank_owner" || role === "reviewer")) {
+        const other = role === "bank_owner" ? "reviewer" : "bank_owner";
+        if (before[other]?.personId === personId) return badRequest(c, SEPARATION_ERROR);
+      }
       if (before[role]?.personId === personId) return c.json({ ok: true }, 200);
 
       const upsert = db

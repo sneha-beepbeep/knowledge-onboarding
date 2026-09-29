@@ -12,6 +12,9 @@ type EnvLike = Env & { ANTHROPIC_API_KEY?: string; AI_MOCK?: string; AI_ENABLED?
 
 export const isLocal = (env: Env) => (env as EnvLike).ENVIRONMENT === "local";
 
+/** The real pilot. Rules that would get in the way of local testing (one person, all roles) apply here only. */
+export const isProduction = (env: Env) => (env as EnvLike).ENVIRONMENT === "production";
+
 /** The deployed demo copy (worker knowledge-check-demo, its own D1). Never the pilot. */
 export const isDemo = (env: Env) => (env as EnvLike).ENVIRONMENT === "demo";
 

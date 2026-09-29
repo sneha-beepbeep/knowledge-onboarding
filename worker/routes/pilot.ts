@@ -27,6 +27,7 @@ export const pilotRoutes = new Hono<AppEnv>()
           items: r.items,
           complete: r.complete,
           aiEnabled: r.aiEnabled,
+          rolesOverlap: r.rolesOverlap,
           readySince: r.readySince ? dateOf(c.env, r.readySince) : null,
           missingRoles: r.missingRoles,
         },

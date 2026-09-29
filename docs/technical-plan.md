@@ -395,5 +395,4 @@ These are CPO decisions taken after this plan was approved. They are recorded he
 - **Metrics:** in AI-off mode, A1 and V3 show "Review outcomes" (the counts only). The rewrite rate and the kill-line copy are hidden, and K3 is never raised: K3 is suspended in round 1. The counts are still recorded for the F3 audit and the export. M4 isn't measured in the app.
 - **Copy:** the bank owner's role description, the V1 empty states and the A4 empty state read correctly in AI-off mode. The export has no AI-specific columns; "discarded invalid" simply doesn't occur.
 
-**Open from PRD rev. 3:** "the bank owner and the reviewer must be different people" is **not enforced by the app yet**. A2 only warns when the reviewer also holds an admin role. Enforcing it (refusing the assignment in `PUT /api/roles/:role`) is a small change. It needs a decision on what happens in local testing, where one person holds every role.
-
+**Bank owner ≠ reviewer (PRD rev. 3, CPO 2026-09-29), production only.** When `ENVIRONMENT` is `"production"`, `PUT /api/roles/:role` refuses to make one person both bank owner and reviewer, in either direction (400), and A1 readiness shows "Roles named" as not done if data created earlier has that overlap. Local and demo keep A2's warning only, so the one-person local setup still works.
