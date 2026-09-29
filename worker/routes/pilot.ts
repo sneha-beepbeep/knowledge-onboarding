@@ -10,11 +10,16 @@ import { readiness } from "../lib/readiness";
 import { NOTICE_VERSION } from "../lib/notice";
 import { pilot } from "../db/schema";
 import { isIsoDate } from "../../shared/dates";
+import { pilotLoop } from "../lib/loop";
+import { m3Figures } from "../lib/m3";
+import { keyDates } from "./data";
 
 export const pilotRoutes = new Hono<AppEnv>()
   .get("/pilot", allow(...ADMIN), async (c) => {
     const db = getDb(c.env);
     const r = await readiness(db, c.env);
+    const t = today(c.env);
+    const [loop, m3] = await Promise.all([pilotLoop(db, c.env, t, r.pilot, r.version, r.roles), m3Figures(db)]);
     return c.json(
       {
         isCpo: isCpo(c.get("me")),
@@ -32,7 +37,13 @@ export const pilotRoutes = new Hono<AppEnv>()
         },
         student: r.roles.student ? { id: r.roles.student.personId, name: r.roles.student.name } : null,
         formASent: r.pilot.formASentAt ? dateOf(c.env, r.pilot.formASentAt) : null,
-        today: today(c.env),
+        today: t,
+        loop: loop.rows,
+        deletion: loop.deleted,
+        keyDates: await keyDates(db, r.roles.student?.personId),
+        m3: m3.total,
+        // K3 kill signal: informational only, blocks nothing.
+        k3: m3.total.rewriteRatePct !== null && m3.total.rewriteRatePct > 50,
       },
       200,
     );

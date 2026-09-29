@@ -9,6 +9,7 @@ import { A4Publish } from "./screens/A4Publish";
 import { T1Home, T2Notice, T3Quiz } from "./screens/Student";
 import { R1Results, R2Compare } from "./screens/Results";
 import { M1Flags, M2Flag } from "./screens/Flags";
+import { A6Data } from "./screens/A6Data";
 
 const ADMIN = ["bank_owner", "cpo"] as const;
 
@@ -16,6 +17,7 @@ export const routes: RouteDef[] = [
   { path: "/pilot", roles: [...ADMIN], component: A1Pilot },
   { path: "/people", roles: [...ADMIN], component: A2People },
   { path: "/bank", roles: [...ADMIN], component: A3Bank },
+  { path: "/data", roles: [...ADMIN], component: A6Data },
   { path: "/publish", roles: [...ADMIN], component: A4Publish },
   { path: "/review", roles: ["reviewer", ...ADMIN], component: V1Queue },
   { path: "/review/stats", roles: ["reviewer", ...ADMIN], component: V3Stats },

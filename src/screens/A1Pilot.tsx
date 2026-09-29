@@ -25,8 +25,16 @@ export function A1Pilot() {
       <p>
         <Link to="/people">People & roles</Link>
       </p>
+      {data.k3 && (
+        <p className="banner" role="note">
+          <span aria-hidden="true">⚠ </span>Rewrite rate is above 50%. This is kill signal K3 in the PRD. Consider <code>/checkpoint</code>.
+        </p>
+      )}
       <SendFormA data={data} reload={reload} />
       <Readiness data={data} reload={reload} />
+      <Loop data={data} />
+      <KeyDates data={data} />
+      <Quality data={data} />
     </Page>
   );
 }
@@ -231,6 +239,72 @@ function SendFormA({ data, reload }: { data: Data; reload: () => Promise<void> }
           </>
         )}
       </ConfirmDialog>
+    </section>
+  );
+}
+
+function Loop({ data }: { data: Data }) {
+  return (
+    <section aria-labelledby="loop-h">
+      <h2 id="loop-h">Pilot loop</h2>
+      {data.deletion && (
+        <p className="notice">
+          Data deleted for {data.deletion.name} on {formatDate(data.deletion.date)} by {data.deletion.by}.
+        </p>
+      )}
+      <DataTable head={["Stage", "Status"]}>
+        {data.loop.map((r) => (
+          <tr key={r.stage}>
+            <th scope="row">{r.stage}</th>
+            <td>
+              <StatusLabel tone={r.tone === "attention" ? "attention" : r.tone}>{r.status}</StatusLabel>
+              {r.link && (
+                <>
+                  {" "}
+                  <Link to={r.link}>Open</Link>
+                </>
+              )}
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+    </section>
+  );
+}
+
+function KeyDates({ data }: { data: Data }) {
+  const k = data.keyDates;
+  return (
+    <section aria-labelledby="dates-h">
+      <h2 id="dates-h">Key dates</h2>
+      {k.dayZero ? (
+        <dl className="kv">
+          <dt>Day 0 (check 1 submitted)</dt>
+          <dd>{formatDate(k.dayZero)}</dd>
+          <dt>Day 90 (the review)</dt>
+          <dd>{formatDate(k.dayNinety!)}</dd>
+          <dt>Retention</dt>
+          <dd>Delete identifiable results by {formatDate(k.retention!)}</dd>
+        </dl>
+      ) : (
+        <p className="muted">Day 0 is set when the student submits check 1. Day 90 and the deletion date follow from it.</p>
+      )}
+    </section>
+  );
+}
+
+function Quality({ data }: { data: Data }) {
+  const m = data.m3;
+  return (
+    <section aria-labelledby="m3-h">
+      <h2 id="m3-h">Review quality (M3)</h2>
+      <p>
+        Drafts reviewed: {m.reviewed}. Approved as is: {m.approvedAsIs}. Edited (minor): {m.minor}. Edited (substantial): {m.substantial}. Rejected:{" "}
+        {m.rejected}. <strong>Rewrite rate: {m.rewriteRatePct === null ? "not yet known" : `${m.rewriteRatePct}%`}</strong> (kill line: more than 50%).
+      </p>
+      <p>
+        <Link to="/review/stats">Question statistics</Link> · <Link to="/review">Review queue</Link> · <Link to="/flags">Flags</Link>
+      </p>
     </section>
   );
 }

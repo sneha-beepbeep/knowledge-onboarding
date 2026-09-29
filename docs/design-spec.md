@@ -604,3 +604,7 @@ Target WCAG 2.2 AA for all screens, and especially for T2, T3 and R1, which a ne
 Decisions deliberately left to `/plan`: the sign-in method (it must keep the student's path at Forms parity, with no account creation), email vs. in-app-only notifications, the AI provider and how the "AI provider set up" state is detected, file size limits, the PDF text extraction approach, how quoted passages are checked word for word against the source, and how the CSV download is packaged.
 
 Requirements on `/plan` that come from this design: draft content and published forms must never be reachable through a student-facing route. Access checks are needed on the server, per person and per role (four levels). The reviewer's answer statistics must be suppressed on the server below 5 distinct people, not just hidden in the UI. The follow-up note must never be returned to the student. The notice version and choice must be stored. Deletion must be all-or-nothing. Unsubmitted quiz answers must survive a sign-in expiry. The AI must be instructed to draft in English. Working-day calculations count Monday to Friday only, without a holiday calendar.
+
+---
+
+**Post-approval changes:** 2026-09-29, CPO decision 5 at `/plan`: A6 no longer says it keeps "anonymised question statistics". The delete panel now says it keeps "review outcomes (these contain no names)", because at n=1 answer statistics identify the student. V3 computes them live, so they are deleted with the person.
