@@ -12,8 +12,15 @@ type EnvLike = Env & { ANTHROPIC_API_KEY?: string; AI_MOCK?: string };
 
 export const isLocal = (env: Env) => (env as EnvLike).ENVIRONMENT === "local";
 
-/** Mock AI is honoured only in the local environment (technical plan §4). */
-export const aiMock = (env: Env) => isLocal(env) && (env as EnvLike).AI_MOCK === "1";
+/** The deployed demo copy (worker knowledge-check-demo, its own D1). Never the pilot. */
+export const isDemo = (env: Env) => (env as EnvLike).ENVIRONMENT === "demo";
+
+/**
+ * Mock AI is honoured only in the local environment (technical plan §4) and in
+ * the deployed demo copy (CPO decision 2026-09-29: no Anthropic key in round 1,
+ * the demo must still reach Send Form A). Production ignores AI_MOCK.
+ */
+export const aiMock = (env: Env) => (isLocal(env) || isDemo(env)) && (env as EnvLike).AI_MOCK === "1";
 
 export const anthropicKey = (env: Env): string | undefined => {
   const k = (env as EnvLike).ANTHROPIC_API_KEY;
