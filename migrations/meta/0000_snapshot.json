@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "cffceeae-308c-4300-94d5-5bdc61077a63",
+  "id": "ccadd8b7-9f45-41e5-a1f0-7cc5b5901f0a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "answers": {
@@ -1293,6 +1293,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -1370,6 +1377,19 @@
           "tableTo": "people",
           "columnsFrom": [
             "reviewed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "questions_updated_by_people_id_fk": {
+          "name": "questions_updated_by_people_id_fk",
+          "tableFrom": "questions",
+          "tableTo": "people",
+          "columnsFrom": [
+            "updated_by"
           ],
           "columnsTo": [
             "id"
@@ -1646,7 +1666,15 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "versions_number": {
+          "name": "versions_number",
+          "columns": [
+            "number"
+          ],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},

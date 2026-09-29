@@ -154,20 +154,27 @@ export const questions = sqliteTable(
     discardReason: text("discard_reason"),
     reviewedBy: integer("reviewed_by").references(() => people.id),
     reviewedAt: integer("reviewed_at"),
+    // Who last changed this question (decision, edit or undo): V2 "updated by [name]".
+    updatedBy: integer("updated_by").references(() => people.id),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
   (t) => [index("questions_topic").on(t.topicId), index("questions_status").on(t.status)],
 );
 
-export const versions = sqliteTable("versions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  number: integer("number").notNull(),
-  publishedAt: integer("published_at").notNull(),
-  publishedBy: integer("published_by").notNull(),
-  thresholdPct: integer("threshold_pct").notNull(),
-  perTopicCount: integer("per_topic_count").notNull(),
-});
+export const versions = sqliteTable(
+  "versions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    number: integer("number").notNull(),
+    publishedAt: integer("published_at").notNull(),
+    publishedBy: integer("published_by").notNull(),
+    thresholdPct: integer("threshold_pct").notNull(),
+    perTopicCount: integer("per_topic_count").notNull(),
+  },
+  // The pilot has exactly one published version (decision 4): a second publish fails.
+  (t) => [uniqueIndex("versions_number").on(t.number)],
+);
 
 export const formQuestions = sqliteTable(
   "form_questions",

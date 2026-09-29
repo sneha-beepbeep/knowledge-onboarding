@@ -182,12 +182,14 @@ CREATE TABLE `questions` (
 	`discard_reason` text,
 	`reviewed_by` integer,
 	`reviewed_at` integer,
+	`updated_by` integer,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL,
 	FOREIGN KEY (`topic_id`) REFERENCES `topics`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`draft_run_id`) REFERENCES `draft_runs`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`document_id`) REFERENCES `documents`(`id`) ON UPDATE no action ON DELETE set null,
-	FOREIGN KEY (`reviewed_by`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`reviewed_by`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`updated_by`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE INDEX `questions_topic` ON `questions` (`topic_id`);--> statement-breakpoint
@@ -234,3 +236,5 @@ CREATE TABLE `versions` (
 	`threshold_pct` integer NOT NULL,
 	`per_topic_count` integer NOT NULL
 );
+--> statement-breakpoint
+CREATE UNIQUE INDEX `versions_number` ON `versions` (`number`);
