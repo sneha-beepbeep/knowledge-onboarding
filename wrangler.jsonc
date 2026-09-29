@@ -1,7 +1,7 @@
 {
   // Cloudflare config: one Worker serves the React app (static assets) and the /api routes.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "cf-app-template",
+  "name": "onboarding-knowledge-check",
   "main": "worker/index.ts",
   "compatibility_date": "2026-09-01",
   "assets": {
@@ -12,19 +12,22 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "cf-app-template-db",
+      "database_name": "onboarding-knowledge-check-db",
       // Placeholder — fine for local dev. Before first deploy, run
-      // `npx wrangler d1 create cf-app-template-db` and paste the real id here.
+      // `npx wrangler d1 create onboarding-knowledge-check-db --location weur`
+      // (EU, technical plan §10) and paste the real id here.
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "IMAGES",
-      // Before first deploy, run `npx wrangler r2 bucket create cf-app-template-images`.
-      "bucket_name": "cf-app-template-images"
-    }
-  ],
+  "vars": {
+    // "local" enables AI_MOCK (from .dev.vars). Production must stay "production".
+    "ENVIRONMENT": "production",
+    // Model used for drafting (technical plan §4). Sonnet is a one-line switch: "claude-sonnet-5-5".
+    "AI_MODEL": "claude-opus-5-5",
+    // PLACEHOLDER — BLOCKS DEPLOY. Set the company's IANA timezone (e.g. "Europe/Berlin")
+    // before the first deploy. `npm run deploy` refuses to run while this is unset.
+    "APP_TIMEZONE": "UNSET-BEFORE-DEPLOY"
+  },
   "observability": { "enabled": true }
 }

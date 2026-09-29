@@ -1,0 +1,10 @@
+# Copy to .dev.vars for local development (git-ignored).
+ENVIRONMENT=local
+# Canned AI drafts quoted from your uploaded text; nothing leaves the laptop.
+AI_MOCK=1
+# Local-only timezone. Production value is still open (see wrangler.jsonc).
+APP_TIMEZONE=UTC
+# Used once to create the first CPO: POST /api/auth/bootstrap
+BOOTSTRAP_TOKEN=local-bootstrap-token
+# Leave unset locally. In production: `wrangler secret put ANTHROPIC_API_KEY`
+# ANTHROPIC_API_KEY=
