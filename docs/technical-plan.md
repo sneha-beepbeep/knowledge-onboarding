@@ -1,13 +1,13 @@
 # Technical Plan: Onboarding Knowledge Check (working title)
 
-*Stage 5 `/plan`, 2026-09-29. CPO-approved 2026-09-29 with all engineer recommendations in section 11.*
+*Stage 5 `/plan`, 2026-09-29. CPO-approved 2026-09-29 with all engineer recommendations in section 11. Updated after approval on 2026-09-29: see section 13 (round 1 without AI, demo environment, timezone).*
 
 Sources: `docs/design-spec.md` (rev. 2, CPO-approved), `docs/prd.md` (rev. 2, CPO-approved), `docs/opportunity-brief.md`, and the template `sneha-beepbeep/techstack-togs` at commit `82ef6fc` (Vite + React 19, Hono on Workers, D1 + Drizzle, an R2 binding, one example `items` table).
 
 Scope is the 12 Musts (F1–F12) and the 18 screens and dialogs (S0, A1–A6 including A3a, V1–V3, T1–T3, R1–R2, M1–M2). Nothing else.
 
 **Still open after approval** (none of these blocks the build):
-- `APP_TIMEZONE` has not been provided yet. It blocks deployment, not the build.
+- ~~`APP_TIMEZONE` has not been provided yet.~~ Decided: `Etc/GMT-2` (fixed GMT+2 all year, no daylight saving), section 13.
 - The Cloudflare account has not been created yet.
 - The S/N/E role mapping is still awaiting CPO confirmation.
 
@@ -114,9 +114,11 @@ A person with several roles gets the union of their access. A request without a 
 
 ## 4. AI drafting pipeline
 
+> **Round 1 runs without AI** (section 13): `AI_ENABLED` is `"false"` in production, drafting is refused, and questions are hand-written and loaded with the importer. This section describes the AI-on path, which is kept for round 2.
+
 **Model: `claude-opus-5-5`** (decided, section 11), with the model name held in a `vars.AI_MODEL` setting so switching is a one-line change. Why:
 - The total cost is a few dollars whichever model we use (see below).
-- Draft quality drives M3 and K3 (the rewrite rate) and M4 (reviewer effort). Using the most capable model gives the build decision its fairest test.
+- Draft quality drives M3 and K3 (the rewrite rate) and M4 (reviewer effort). Using the most capable model gives the build decision its fairest test. *(Since section 13, this reasoning applies to round 2 only. In round 1 there are no AI drafts, and K3 is suspended.)*
 - Speed doesn't matter because drafting runs in the background.
 
 Switching to `claude-sonnet-5-5` is a config change. The exact model IDs and prices will be confirmed in the Anthropic console at build time.
@@ -301,11 +303,16 @@ A rough size is 6–9 focused build days. That build effort is separate from M4,
 
 - **Cloudflare account:** a **company-owned** account, not a personal one, because it will hold employee personal data (decided). **Not created yet (open).** The Free plan is enough (CPU-heavy PDF work happens in the browser, and data volumes are tiny). Upgrade to Workers Paid ($5/month) only if we hit a limit.
 - **Region:** create D1 with an EU location hint or jurisdiction if the company is EU-based (GDPR is assumed). IT should confirm.
-- **Environments:** `local` (vite dev, mock AI, `.dev.vars`) and `production`. No staging for n=1. The dry run is done locally so no test data ends up in production's M3 figures.
+- **Environments** (updated, section 13): there are three.
+  - `local`: vite dev, `.dev.vars`, and the mock AI if `AI_ENABLED=true` is set locally.
+  - `demo`: `ENVIRONMENT="demo"`, `AI_MOCK` allowed. It has its own worker, D1 and Workflow, and is deployed only with `npm run deploy:demo`.
+  - `production`.
+
+  There is still no staging for the pilot itself. Dry runs happen locally or in the demo copy, so no test data reaches production's M3 figures.
 - **Secrets (production):**
   - `ANTHROPIC_API_KEY`: from a **company Anthropic Console organisation**, and put in only after IT/security approval.
   - `BOOTSTRAP_TOKEN`: can be deleted after the first CPO sign-in.
-- **Vars:** `ENVIRONMENT`, `AI_MODEL`, `APP_TIMEZONE` (the company timezone. **Not provided yet (open); it blocks deployment, not the build**).
+- **Vars:** `ENVIRONMENT`, `AI_MODEL`, `APP_TIMEZONE` = `Etc/GMT-2` (decided; the `Etc/` sign is inverted, so this means UTC+2), and `AI_ENABLED` = `"false"` for round 1 (section 13).
 - **Bindings:** `DB` (D1), `DRAFT_WORKFLOW`.
 - **First deploy:** follows the template's steps without R2: `wrangler login` → `d1 create` → paste the ID → `db:migrate:remote` → `wrangler secret put` → `npm run deploy`. The app runs at `<name>.<account>.workers.dev`. A custom domain is optional.
 
@@ -313,11 +320,11 @@ A rough size is 6–9 focused build days. That build effort is separate from M4,
 
 | Blocker | What it blocks | Where it shows |
 |---|---|---|
-| IT/security approval of Anthropic | The API key, and therefore drafting, publishing and Form A | A1 "AI provider: Not set up"; A3 drafting disabled |
+| IT/security approval of Anthropic | Round 2 only. With `AI_ENABLED="false"` (round 1) it blocks nothing: questions are imported, and readiness skips the AI item. With AI on, it blocks the API key and therefore drafting, publishing and Form A | AI off: A1 "AI drafting: Off for this round". AI on: A1 "AI provider: Not set up", and A3 drafting disabled |
 | HR sign-off and final notice text | *Send Form A* (the sign-off must match the current notice version) | A1 readiness |
 | Named people for all four roles | *Send Form A* | A1 and A2 |
 | Student's start date | Nothing in the system. Day 0 is set by the Form A submission. It is needed for planning | — |
-| Cloudflare account creation and `APP_TIMEZONE` | Deployment | — |
+| Cloudflare account creation (`APP_TIMEZONE` is decided: `Etc/GMT-2`) | Deployment | — |
 
 ## 11. Risks and decisions (CPO decisions of 2026-09-29)
 
@@ -327,11 +334,11 @@ The CPO approved all nine engineer recommendations on 2026-09-29. The "Decision"
 |---|---|---|
 | 1 | Sign-in mechanism | **Sign-in links** (14-day, revocable, shared privately). Cloudflare Access with SSO can be added later if IT offers it |
 | 2 | Notifications | **No email.** In-app badges (*Review (N)*, *Flags (N)*), A5 copy-link, M2's "Let them know it's ready". Allowed by F7 and the spec's section 6 |
-| 3 | Model | **`claude-opus-5-5`** (cost is trivial, and quality drives K3 and M4). `claude-sonnet-5-5` stays a one-line switch |
+| 3 | Model | **`claude-opus-5-5`** (cost is trivial, and quality drives K3 and M4). `claude-sonnet-5-5` stays a one-line switch. *Round 2 only since section 13: round 1 is hand-written* |
 | 4 | Background drafting | **Cloudflare Workflows** (meets the spec's "you can leave this page"). If it misbehaves locally, the fallback is a normal request with "Keep this page open" wording. That would change the spec, so the engineer brings it back to the CPO before using it |
 | 5 | A6 says it "keeps anonymised question statistics", but at n=1 these identify the student | **Delete them with the person.** V3 is computed live, and A6 says it keeps "review outcomes (these contain no names)" only. A one-sentence copy change to the design spec |
 | 6 | New dependencies and template changes | **Approved:** `pdfjs-dist`, `fflate`, `vitest` and `@cloudflare/vitest-pool-workers`. R2 dropped. Migrations start fresh |
-| 7 | Cloudflare account, region, timezone | **Company-owned account, EU data location.** Still open: the account has not been created yet, and `APP_TIMEZONE` has not been provided (blocks deployment, not the build) |
+| 7 | Cloudflare account, region, timezone | **Company-owned account, EU data location.** Timezone decided: `APP_TIMEZONE` = `Etc/GMT-2` (section 13). Still open: the account has not been created yet |
 | 8 | Who can issue sign-in links | **Admins can issue them. Links for admin roles and assigning the CPO role are CPO only** |
 | 9 | Notice "Questions? Contact [name / HR contact]" | **Default to the bank owner's name.** If HR wants an HR contact, it is a text change and a notice version increase |
 | Open | S/N/E role mapping | **Awaiting CPO confirmation** |
@@ -353,3 +360,40 @@ The CPO approved all nine engineer recommendations on 2026-09-29. The "Decision"
 7. First commit: "Import techstack-togs template @ 82ef6fc", so where the code came from is on record. Then build steps 1–13 follow, with one commit each.
 
 None of this happens until `/build` is invoked.
+
+## 13. Post-approval changes (2026-09-29)
+
+These are CPO decisions taken after this plan was approved. They are recorded here so the plan still matches the code.
+
+**Timezone.** `APP_TIMEZONE` is `Etc/GMT-2` in both production and the demo: company time is a fixed GMT+2 all year, with no daylight saving. This is no longer a deploy blocker.
+
+**Demo environment** (commits `051da3c`, `262a0b1`).
+- Adds a third environment, `demo`. It has its own worker (`knowledge-check-demo`), D1 (`knowledge-check-demo-db`) and Workflow, set in `wrangler.jsonc` `env.demo`, where vars are not inherited from the top level.
+- `ENVIRONMENT="demo"` allows `AI_MOCK=1`, so the demo can reach Send Form A without a key. Production still ignores `AI_MOCK`.
+- It is deployed with `npm run deploy:demo`. The production guard (`scripts/check-deploy-config.mjs`, run by `npm run deploy`) checks the top-level config only, and it blocks `AI_MOCK` and `CLOUDFLARE_ENV`.
+
+**Round 1 without AI** (PRD rev. 3; commits `5ca8a76`, `dbc0949`). IT decided to skip the AI integration for the first round. The bank owner writes the questions by hand, and the day-90 review is the checkpoint on whether to use AI in round 2.
+- **`AI_ENABLED` switch** (`worker/lib/state.ts`, `aiEnabled`):
+  - Only the exact value `"false"` turns AI off; unset means on.
+  - The top-level (production) vars set `"false"`, and local dev inherits it. Set `AI_ENABLED=true` in `.dev.vars` for mock drafting, for example for `scripts/local-walkthrough.mjs`.
+  - `env.demo` leaves it unset, so the demo mock is unchanged.
+  - The production guard rejects any value other than `"true"` or `"false"`.
+- **Readiness** (`worker/lib/readiness.ts`): in AI-off mode the "AI provider set up" item doesn't count, so Send Form A needs roles, a published bank and HR sign-off only. A1 shows "AI drafting: Off for this round".
+- **Drafting:**
+  - `POST /api/topics/:id/drafts` returns 409 "AI drafting is off for this round".
+  - `DraftTopicWorkflow` also refuses to call a model.
+  - A3 hides the drafting controls, the consent dialog and the set-up warning.
+- **Importer:**
+  - Run with `npm run import:questions -- <file.json> [--check]`; the code is in `scripts/import-questions.mjs` and `scripts/lib/bank-import.ts`.
+  - It is run by the question bank owner, who is not an engineer. The guide and the format (`knowledge-check-import/1`) are in `scripts/import/README.md`, with an example in `scripts/import/example.json`.
+  - Documents are checked like A3a. Each question goes through `validateDraft` (validation and grounding). It is all or nothing.
+  - Questions land `pending`, with one run per topic (`model = "manual import (no AI)"`). The reviewer gate, Undo and publishing work as for AI drafts.
+  - It runs locally by default.
+  - Remote loading needs `--remote <db> --confirm-remote=<db>`. It accepts only the demo DB, or the production DB when the production deploy guard passes. It is a separate, CPO-approved step at deploy time.
+  - `seed:demo` (the synthetic Slack guide for manual testing) uses the same planner.
+- **Student notice version 2** (`NOTICE_VERSION` = 2). The "AI:" paragraph is replaced by "How the questions were made: Our team wrote the questions from our onboarding documents, and a named reviewer checked every question before it was used. No AI tool is used in this round." **This needs HR approval.** The A1 HR sign-off must be recorded for version 2.
+- **Metrics:** in AI-off mode, A1 and V3 show "Review outcomes" (the counts only). The rewrite rate and the kill-line copy are hidden, and K3 is never raised: K3 is suspended in round 1. The counts are still recorded for the F3 audit and the export. M4 isn't measured in the app.
+- **Copy:** the bank owner's role description, the V1 empty states and the A4 empty state read correctly in AI-off mode. The export has no AI-specific columns; "discarded invalid" simply doesn't occur.
+
+**Open from PRD rev. 3:** "the bank owner and the reviewer must be different people" is **not enforced by the app yet**. A2 only warns when the reviewer also holds an admin role. Enforcing it (refusing the assignment in `PUT /api/roles/:role`) is a small change. It needs a decision on what happens in local testing, where one person holds every role.
+
