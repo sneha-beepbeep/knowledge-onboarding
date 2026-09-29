@@ -7,3 +7,5 @@ dist/
 !.dev.vars.example
 .env*
 *.log
+# Demo deploy: the BOOTSTRAP_TOKEN written by npm run deploy:demo. Never commit.
+.demo-bootstrap.local

@@ -29,9 +29,38 @@
     "ENVIRONMENT": "production",
     // Model used for drafting (technical plan §4). Sonnet is a one-line switch: "claude-sonnet-5-5".
     "AI_MODEL": "claude-opus-5-5",
-    // PLACEHOLDER — BLOCKS DEPLOY. Set the company's IANA timezone (e.g. "Europe/Berlin")
-    // before the first deploy. `npm run deploy` refuses to run while this is unset.
-    "APP_TIMEZONE": "UNSET-BEFORE-DEPLOY"
+    // Company time is fixed GMT+2 all year, no daylight saving (CPO, 2026-09-29).
+    // IANA "Etc/GMT-2" means UTC+2: the Etc/ sign is inverted on purpose.
+    "APP_TIMEZONE": "Etc/GMT-2"
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+
+  "env": {
+    // DEMO COPY — never the pilot (CPO, 2026-09-29). Its own worker, D1 database and
+    // Workflow, so demo data never reaches the pilot DB or its M3 figures.
+    // Deploy with `npm run deploy:demo` only. In a wrangler environment, vars, D1 and
+    // workflows are NOT inherited from the top level, so every one is repeated here.
+    "demo": {
+      "name": "knowledge-check-demo",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "knowledge-check-demo-db",
+          // Written by `npm run deploy:demo` (creates the DB in weur, or reuses it).
+          "database_id": "00000000-0000-0000-0000-0000000000de",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "workflows": [
+        { "name": "knowledge-check-demo-draft-topic", "binding": "DRAFT_WORKFLOW", "class_name": "DraftTopicWorkflow" }
+      ],
+      "vars": {
+        // "demo" permits AI_MOCK (canned drafts quoted from the uploaded text, no AI call).
+        "ENVIRONMENT": "demo",
+        "AI_MOCK": "1",
+        "AI_MODEL": "claude-opus-5-5",
+        "APP_TIMEZONE": "Etc/GMT-2"
+      }
+    }
+  }
 }
