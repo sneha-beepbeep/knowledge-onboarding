@@ -1,5 +1,5 @@
 // A2 People & roles (F12, §2, §7).
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ok, ApiError } from "../api";
 import { Page, Skeleton, LoadError, ConfirmDialog, LiveRegion, InlineError, DataTable, errProps } from "../components/ui";
 import { useLoad } from "../lib/useLoad";
@@ -14,6 +14,12 @@ export function A2People() {
   const [editing, setEditing] = useState<string | null>(null);
   const [links, setLinks] = useState<Record<number, string>>({});
   const [linkError, setLinkError] = useState<string | null>(null);
+
+  // Closing the assign form returns focus to the row's Change button.
+  const closeForm = (role: string) => {
+    setEditing(null);
+    requestAnimationFrame(() => document.getElementById(`change-${role}`)?.focus());
+  };
 
   if (loading && !data) return <Page title="People & roles"><Skeleton /></Page>;
   if (error || !data) return <Page title="People & roles"><LoadError message="Couldn't load people and roles. Reload the page." /></Page>;
@@ -59,7 +65,15 @@ export function A2People() {
             </td>
             <td>
               {assignable.some((a) => a.role === r.role) && (
-                <button type="button" className="secondary" onClick={() => setEditing(r.role)} aria-label={`Change ${r.label}`}>
+                <button
+                  type="button"
+                  id={`change-${r.role}`}
+                  className="secondary"
+                  onClick={() => setEditing(r.role)}
+                  aria-label={`Change ${r.label}`}
+                  aria-expanded={editing === r.role}
+                  aria-controls={editing === r.role ? "assign-form" : undefined}
+                >
                   Change
                 </button>
               )}
@@ -74,10 +88,11 @@ export function A2People() {
           data={data}
           role={editing}
           onDone={async () => {
-            setEditing(null);
+            const role = editing;
             await reload();
+            closeForm(role);
           }}
-          onCancel={() => setEditing(null)}
+          onCancel={() => closeForm(editing)}
         />
       )}
 
@@ -124,6 +139,17 @@ function AssignForm({ data, role, onDone, onCancel }: { data: Data; role: string
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState("");
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // The form opens below the table, often off-screen: bring it into view and move
+  // focus to its heading so keyboard and screen-reader users land in it.
+  useEffect(() => {
+    const h = headingRef.current;
+    if (!h) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    h.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    h.focus({ preventScroll: true });
+  }, []);
 
   async function save() {
     setBusy(true);
@@ -152,8 +178,10 @@ function AssignForm({ data, role, onDone, onCancel }: { data: Data; role: string
   }
 
   return (
-    <section className="card" aria-labelledby="assign-h">
-      <h2 id="assign-h">Assign: {r.label}</h2>
+    <section className="card" id="assign-form" aria-labelledby="assign-h">
+      <h2 id="assign-h" ref={headingRef} tabIndex={-1}>
+        Assign: {r.label}
+      </h2>
       <form onSubmit={submit} className="stack" noValidate>
         <fieldset>
           <legend>Person</legend>
