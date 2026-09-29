@@ -3,10 +3,12 @@
 import type { RouteDef } from "./App";
 import { A1Pilot } from "./screens/A1Pilot";
 import { A2People } from "./screens/A2People";
+import { A3Bank } from "./screens/A3Bank";
 
 const ADMIN = ["bank_owner", "cpo"] as const;
 
 export const routes: RouteDef[] = [
   { path: "/pilot", roles: [...ADMIN], component: A1Pilot },
   { path: "/people", roles: [...ADMIN], component: A2People },
+  { path: "/bank", roles: [...ADMIN], component: A3Bank },
 ];

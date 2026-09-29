@@ -4,6 +4,7 @@ import { requireSession } from "./auth";
 import { authRoutes } from "./routes/auth";
 import { pilotRoutes } from "./routes/pilot";
 import { peopleRoutes } from "./routes/people";
+import { bankRoutes } from "./routes/bank";
 
 // `Env` is generated from wrangler.jsonc by `npm run cf-typegen`.
 const app = new Hono<AppEnv>().basePath("/api");
@@ -25,7 +26,8 @@ const routes = app
   .get("/health", (c) => c.json({ ok: true }))
   .route("/", authRoutes)
   .route("/", pilotRoutes)
-  .route("/", peopleRoutes);
+  .route("/", peopleRoutes)
+  .route("/", bankRoutes);
 
 // Unknown API paths get the same uniform 404 as access failures.
 app.notFound((c) => c.json({ error: "This page isn't available to you." }, 404));
