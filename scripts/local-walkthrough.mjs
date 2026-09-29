@@ -1,7 +1,8 @@
 // Local API walkthrough of flows 0-4 against `npm run dev` (mock AI, fresh local DB).
 // Usage: rm -rf .wrangler/state && npm run dev   (in one terminal)
 //        node scripts/local-walkthrough.mjs       (in another)
-// Needs .dev.vars from .dev.vars.example (BOOTSTRAP_TOKEN=local-bootstrap-token).
+// Needs .dev.vars from .dev.vars.example (BOOTSTRAP_TOKEN=local-bootstrap-token),
+// with AI_ENABLED=true: this walkthrough drafts with the mock AI.
 const BASE = "http://localhost:5173";
 const log = (...a) => console.log(...a);
 let failures = 0;

@@ -66,17 +66,25 @@ function Readiness({ data, reload }: { data: Data; reload: () => Promise<void> }
             <Link to="/people">Assign roles</Link>
           </td>
         </tr>
-        <tr>
-          <th scope="row">AI provider set up</th>
-          <td>
-            {r.items.aiSetUp ? (
-              <StatusLabel tone="done">Set up</StatusLabel>
-            ) : (
-              <StatusLabel tone="wait">Not set up</StatusLabel>
-            )}
-          </td>
-          <td>{r.items.aiSetUp ? "" : "Not set up. The provider must be approved before any material is sent (PRD Q2)."}</td>
-        </tr>
+        {r.aiEnabled ? (
+          <tr>
+            <th scope="row">AI provider set up</th>
+            <td>
+              {r.items.aiSetUp ? (
+                <StatusLabel tone="done">Set up</StatusLabel>
+              ) : (
+                <StatusLabel tone="wait">Not set up</StatusLabel>
+              )}
+            </td>
+            <td>{r.items.aiSetUp ? "" : "Not set up. The provider must be approved before any material is sent (PRD Q2)."}</td>
+          </tr>
+        ) : (
+          <tr>
+            <th scope="row">AI drafting</th>
+            <td>Off for this round</td>
+            <td>Not needed. Questions are written by the team and loaded for review.</td>
+          </tr>
+        )}
         <tr>
           <th scope="row">Bank published</th>
           <td>{done(r.items.bankPublished)}</td>
@@ -295,13 +303,21 @@ function KeyDates({ data }: { data: Data }) {
 
 function Quality({ data }: { data: Data }) {
   const m = data.m3;
+  const ai = data.readiness.aiEnabled;
   return (
     <section aria-labelledby="m3-h">
-      <h2 id="m3-h">Review quality (M3)</h2>
-      <p>
-        Drafts reviewed: {m.reviewed}. Approved as is: {m.approvedAsIs}. Edited (minor): {m.minor}. Edited (substantial): {m.substantial}. Rejected:{" "}
-        {m.rejected}. <strong>Rewrite rate: {m.rewriteRatePct === null ? "not yet known" : `${m.rewriteRatePct}%`}</strong> (kill line: more than 50%).
-      </p>
+      <h2 id="m3-h">{ai ? "Review quality (M3)" : "Review outcomes"}</h2>
+      {ai ? (
+        <p>
+          Drafts reviewed: {m.reviewed}. Approved as is: {m.approvedAsIs}. Edited (minor): {m.minor}. Edited (substantial): {m.substantial}. Rejected:{" "}
+          {m.rejected}. <strong>Rewrite rate: {m.rewriteRatePct === null ? "not yet known" : `${m.rewriteRatePct}%`}</strong> (kill line: more than 50%).
+        </p>
+      ) : (
+        <p>
+          Questions reviewed: {m.reviewed}. Approved as is: {m.approvedAsIs}. Edited (minor): {m.minor}. Edited (substantial): {m.substantial}. Rejected:{" "}
+          {m.rejected}.
+        </p>
+      )}
       <p>
         <Link to="/review/stats">Question statistics</Link> · <Link to="/review">Review queue</Link> · <Link to="/flags">Flags</Link>
       </p>

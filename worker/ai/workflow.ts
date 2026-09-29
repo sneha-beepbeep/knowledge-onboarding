@@ -4,7 +4,7 @@ import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloud
 import { NonRetryableError } from "cloudflare:workflows";
 import { and, eq, ne } from "drizzle-orm";
 import { documentTopics, documents, draftRuns, questions, topics } from "../db/schema";
-import { aiMock, anthropicKey, getDb, type DB } from "../lib/state";
+import { aiEnabled, aiMock, anthropicKey, getDb, type DB } from "../lib/state";
 import { effectiveRun } from "../lib/bank";
 import { DraftError, callAnthropic, mockDrafts, reasonFromMessage, type DraftRequest } from "./provider";
 import { validateDraft, type RawDraft } from "./validate";
@@ -44,6 +44,8 @@ export class DraftTopicWorkflow extends WorkflowEntrypoint<Env, DraftParams> {
           timeout: "6 minutes",
         },
         async () => {
+          // AI-off mode: never call a model, even for a run created before the switch.
+          if (!aiEnabled(env)) throw new NonRetryableError("DRAFT_FAIL:AI set-up problem, contact the pilot team");
           const db = getDb(env);
           const [run] = await db.select().from(draftRuns).where(eq(draftRuns.id, runId));
           if (!run) throw new NonRetryableError("DRAFT_FAIL:service unavailable");

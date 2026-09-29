@@ -6,6 +6,7 @@ import { call, db, makeWorld, NAMES, type World } from "./helpers";
 import { seedLoop } from "./scenario";
 import { safeCell, toCsv } from "../worker/lib/csv";
 import { answers, attempts, deletionLog, flags, followups, participation, people, questions, roleAssignments, sessions } from "../worker/db/schema";
+import { NOTICE_VERSION } from "../worker/lib/notice";
 
 describe("CSV", () => {
   it("quotes per RFC 4180 and neutralises formulas", () => {
@@ -52,7 +53,7 @@ describe("A6 export", () => {
     expect(fl).toMatch(/,2,yes$/);
     expect(text("review_outcomes.csv")).toContain("discarded invalid,ungrounded");
     expect(text("review_outcomes.csv")).toContain(",Form A");
-    expect(text("participation.csv")).toContain(`${NAMES.student},1,take part,`);
+    expect(text("participation.csv")).toContain(`${NAMES.student},${NOTICE_VERSION},take part,`);
   });
 });
 

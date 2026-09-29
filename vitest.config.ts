@@ -17,6 +17,9 @@ export default defineConfig(async () => {
             TEST_MIGRATIONS: migrations,
             ENVIRONMENT: "local",
             AI_MOCK: "1",
+            // wrangler.jsonc sets AI_ENABLED "false" for round 1; tests run with AI on
+            // by default, and the AI-off tests pass their own env (test/ai-off.test.ts).
+            AI_ENABLED: "true",
             APP_TIMEZONE: "UTC",
             BOOTSTRAP_TOKEN: "test-bootstrap-token",
           },

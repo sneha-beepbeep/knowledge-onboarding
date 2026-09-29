@@ -4,7 +4,9 @@
 // before Form A can be sent (technical plan §6).
 import { formatDate } from "../../shared/dates";
 
-export const NOTICE_VERSION = 1;
+// Version 2 (2026-09-29): round 1 runs without AI; the "AI:" paragraph was replaced
+// by "How the questions were made:". Awaiting HR approval like version 1.
+export const NOTICE_VERSION = 2;
 
 export type NoticeBlock =
   | { kind: "p"; lead?: string; text: string }
@@ -86,8 +88,8 @@ export function renderNotice(p: NoticeParams) {
     { kind: "p", lead: "For how long:", text: retention },
     {
       kind: "p",
-      lead: "AI:",
-      text: "The questions were drafted by an AI tool from our onboarding documents and then checked by a person. The AI tool never sees your name or your answers.",
+      lead: "How the questions were made:",
+      text: "Our team wrote the questions from our onboarding documents, and a named reviewer checked every question before it was used. No AI tool is used in this round.",
     },
     {
       kind: "p",

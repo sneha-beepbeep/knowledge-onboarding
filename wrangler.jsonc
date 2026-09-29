@@ -31,7 +31,11 @@
     "AI_MODEL": "claude-opus-5-5",
     // Company time is fixed GMT+2 all year, no daylight saving (CPO, 2026-09-29).
     // IANA "Etc/GMT-2" means UTC+2: the Etc/ sign is inverted on purpose.
-    "APP_TIMEZONE": "Etc/GMT-2"
+    "APP_TIMEZONE": "Etc/GMT-2",
+    // Round 1 runs without AI (CPO, 2026-09-29): drafting is off, questions are loaded
+    // with scripts/import-questions.mjs, and "AI provider set up" doesn't block Form A.
+    // Only "false" turns AI off; unset means on. Not inherited by env.demo (mock stays on).
+    "AI_ENABLED": "false"
   },
   "observability": { "enabled": true },
 

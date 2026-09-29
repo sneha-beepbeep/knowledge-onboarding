@@ -26,6 +26,7 @@ export const pilotRoutes = new Hono<AppEnv>()
         readiness: {
           items: r.items,
           complete: r.complete,
+          aiEnabled: r.aiEnabled,
           readySince: r.readySince ? dateOf(c.env, r.readySince) : null,
           missingRoles: r.missingRoles,
         },
@@ -42,8 +43,9 @@ export const pilotRoutes = new Hono<AppEnv>()
         deletion: loop.deleted,
         keyDates: await keyDates(db, r.roles.student?.personId),
         m3: m3.total,
-        // K3 kill signal: informational only, blocks nothing.
-        k3: m3.total.rewriteRatePct !== null && m3.total.rewriteRatePct > 50,
+        // K3 kill signal: informational only, blocks nothing. It judges AI drafts,
+        // so it is never raised in AI-off mode.
+        k3: r.aiEnabled && m3.total.rewriteRatePct !== null && m3.total.rewriteRatePct > 50,
       },
       200,
     );

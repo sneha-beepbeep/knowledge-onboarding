@@ -60,6 +60,9 @@ export function productionProblems(config, processEnv = {}) {
     problems.push("D1 database_id is the local placeholder. Run `wrangler d1 create` and paste the id.");
   if (vars.ENVIRONMENT !== "production") problems.push('ENVIRONMENT must be "production" in wrangler.jsonc.');
   if (vars.AI_MOCK !== undefined) problems.push("AI_MOCK must not be set in the production vars.");
+  // A typo such as "False" would silently leave AI on; only the two exact values are allowed.
+  if (vars.AI_ENABLED !== undefined && vars.AI_ENABLED !== "true" && vars.AI_ENABLED !== "false")
+    problems.push(`AI_ENABLED is "${vars.AI_ENABLED}". Use "false" (AI off) or "true", or leave it unset (AI on).`);
   if (config.name === DEMO_WORKER || db?.database_name === DEMO_DB)
     problems.push("The top-level config points at the demo worker or demo database.");
   if (processEnv.CLOUDFLARE_ENV)

@@ -5,7 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { AppEnv } from "../types";
 import { ADMIN, allow, isCpo, issueLink, linkUrl } from "../auth";
 import { body, badRequest, idParam, notAvailable, str } from "../lib/http";
-import { getDb, getRoleMap, ROLE_LABELS, type RoleMap } from "../lib/state";
+import { aiEnabled, getDb, getRoleMap, ROLE_LABELS, type RoleMap } from "../lib/state";
 import { flags, people, roleAssignments, ROLES, type Role } from "../db/schema";
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
@@ -15,6 +15,12 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   reviewer: "Approves, edits or rejects every draft question before use.",
   cpo: "HR clearance, the 90-day review, and the go/kill/checkpoint call.",
 };
+
+/** AI-off mode (round 1): the bank owner writes the questions; nothing is drafted by AI. */
+const BANK_OWNER_AI_OFF = "Uploads material, writes the questions for the pilot team to load, publishes the pilot's single version, and logs effort.";
+
+export const roleDescription = (role: Role, ai: boolean) =>
+  role === "bank_owner" && !ai ? BANK_OWNER_AI_OFF : ROLE_DESCRIPTIONS[role];
 
 const OVERLAP_NOTE = "The student notice will list this person once, under their other role.";
 
@@ -48,7 +54,7 @@ export const peopleRoutes = new Hono<AppEnv>()
         roles: ROLES.map((role) => ({
           role,
           label: ROLE_LABELS[role],
-          description: ROLE_DESCRIPTIONS[role],
+          description: roleDescription(role, aiEnabled(c.env)),
           person: roles[role] ?? null,
         })),
         people: everyone

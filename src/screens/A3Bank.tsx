@@ -96,8 +96,14 @@ export function A3Bank() {
         <Link to="/publish">{locked ? "See the published forms" : "Publish version"}</Link>
       </div>
       <LiveRegion>{msg}</LiveRegion>
-      {!data.aiSetUp && !locked && (
+      {data.aiEnabled && !data.aiSetUp && !locked && (
         <p className="notice notice-warn">AI drafting isn't set up yet. The provider must be approved first.</p>
+      )}
+      {!data.aiEnabled && !locked && (
+        <p className="notice">
+          AI drafting is off for this round. The questions are written by the team and loaded by the pilot team, then reviewed
+          here like any draft.
+        </p>
       )}
 
       {data.topics.length === 0 ? (
@@ -120,7 +126,9 @@ export function A3Bank() {
             data={data}
             locked={locked}
             onRemove={setRemoving}
-            drafting={<DraftControls topic={t} data={data} locked={locked} error={startError[t.id]} onStart={startDraft} />}
+            drafting={
+              data.aiEnabled ? <DraftControls topic={t} data={data} locked={locked} error={startError[t.id]} onStart={startDraft} /> : undefined
+            }
           />
         ))
       )}
@@ -216,12 +224,16 @@ export function TopicCard({
       <h3>Drafts</h3>
       <p>
         {c.total === 0
-          ? "Not drafted"
+          ? data.aiEnabled
+            ? "Not drafted"
+            : "No questions loaded yet"
           : `${c.total} drafts: ${c.approved} approved, ${c.rejected} rejected, ${c.pending} waiting for review`}
       </p>
       {c.total > 0 && c.approved === 0 && c.pending === 0 && (
         <p className="notice notice-warn">
-          All drafts for {t.name} were rejected. Draft more, add clearer material, or leave this topic out of the version.
+          {data.aiEnabled
+            ? `All drafts for ${t.name} were rejected. Draft more, add clearer material, or leave this topic out of the version.`
+            : `All questions for ${t.name} were rejected. Ask the pilot team to load new ones, or leave this topic out of the version.`}
         </p>
       )}
       {drafting}

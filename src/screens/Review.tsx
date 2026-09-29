@@ -5,6 +5,7 @@ import { Page, Skeleton, LoadError, StatusLabel, ErrorSummary, InlineError, Live
 import { useLoad } from "../lib/useLoad";
 import { Link, navigate } from "../lib/router";
 import { formatDate } from "../../shared/dates";
+import { useMe } from "../lib/me";
 
 const LETTERS = "ABCD";
 
@@ -39,6 +40,7 @@ function statusLabel(s: string, edit: string) {
 
 export function V1Queue() {
   const [filter, setFilter] = useState<Filter>("waiting");
+  const ai = useMe().me.aiEnabled;
   const { data, error, loading, reload } = useLoad(() => ok(api.review.questions.$get({ query: { status: filter } })), [filter]);
   if (loading && !data) return <Page title="Review"><Skeleton /></Page>;
   if (error || !data) return <Page title="Review"><LoadError message="Couldn't load the review queue. Reload the page." onRetry={reload} /></Page>;
@@ -70,9 +72,15 @@ export function V1Queue() {
             ))}
           </div>
           {data.counts.total === 0 ? (
-            <p>No questions to review yet. You'll be notified when drafts are ready.</p>
+            <p>
+              {ai
+                ? "No questions to review yet. You'll be notified when drafts are ready."
+                : "No questions to review yet. They appear here once the pilot team loads them."}
+            </p>
           ) : data.counts.waiting === 0 && filter === "waiting" && !data.published ? (
-            <p>All caught up. {data.bankOwnerName ?? "The bank owner"} can now publish, or may draft more questions.</p>
+            <p>
+              All caught up. {data.bankOwnerName ?? "The bank owner"} can now publish{ai ? ", or may draft more questions" : ""}.
+            </p>
           ) : data.items.length === 0 ? (
             <p className="muted">No questions in this list.</p>
           ) : (
@@ -399,6 +407,7 @@ function RejectForm({ q, busy, onCancel, onReject }: { q: Q; busy: boolean; onCa
 }
 
 export function V3Stats() {
+  const ai = useMe().me.aiEnabled;
   const { data, error, loading, reload } = useLoad(() => ok(api.stats.$get()));
   if (loading && !data) return <Page title="Question statistics"><Skeleton /></Page>;
   if (error || !data) return <Page title="Question statistics"><LoadError message="Couldn't load the statistics. Reload the page." onRetry={reload} /></Page>;
@@ -409,11 +418,21 @@ export function V3Stats() {
         <Link to="/review">Back to the queue</Link>
       </p>
       <h2>Review outcomes</h2>
-      <p>
-        Drafts reviewed: {t.reviewed}. Approved as is: {t.approvedAsIs}. Edited (minor): {t.minor}. Edited (substantial): {t.substantial}. Rejected:{" "}
-        {t.rejected}. <strong>Rewrite rate: {t.rewriteRatePct === null ? "not yet known" : `${t.rewriteRatePct}%`}</strong> (kill line: more than 50%).
-      </p>
-      <DataTable caption="By topic" head={["Topic", "Reviewed", "Approved as is", "Edited (minor)", "Edited (substantial)", "Rejected", "Rewrite rate"]}>
+      {ai ? (
+        <p>
+          Drafts reviewed: {t.reviewed}. Approved as is: {t.approvedAsIs}. Edited (minor): {t.minor}. Edited (substantial): {t.substantial}. Rejected:{" "}
+          {t.rejected}. <strong>Rewrite rate: {t.rewriteRatePct === null ? "not yet known" : `${t.rewriteRatePct}%`}</strong> (kill line: more than 50%).
+        </p>
+      ) : (
+        <p>
+          Questions reviewed: {t.reviewed}. Approved as is: {t.approvedAsIs}. Edited (minor): {t.minor}. Edited (substantial): {t.substantial}. Rejected:{" "}
+          {t.rejected}.
+        </p>
+      )}
+      <DataTable
+        caption="By topic"
+        head={["Topic", "Reviewed", "Approved as is", "Edited (minor)", "Edited (substantial)", "Rejected", ...(ai ? ["Rewrite rate"] : [])]}
+      >
         {data.m3.byTopic.map((r) => (
           <tr key={r.topicId}>
             <th scope="row">{r.topic}</th>
@@ -422,7 +441,7 @@ export function V3Stats() {
             <td>{r.minor}</td>
             <td>{r.substantial}</td>
             <td>{r.rejected}</td>
-            <td>{r.rewriteRatePct === null ? "–" : `${r.rewriteRatePct}%`}</td>
+            {ai && <td>{r.rewriteRatePct === null ? "–" : `${r.rewriteRatePct}%`}</td>}
           </tr>
         ))}
       </DataTable>

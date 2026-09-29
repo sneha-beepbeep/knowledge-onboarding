@@ -8,7 +8,7 @@ import { dateInTz, isValidTimeZone } from "../../shared/dates";
 export type DB = DrizzleD1Database<Record<string, never>>;
 export const getDb = (env: Env): DB => drizzle(env.DB);
 
-type EnvLike = Env & { ANTHROPIC_API_KEY?: string; AI_MOCK?: string };
+type EnvLike = Env & { ANTHROPIC_API_KEY?: string; AI_MOCK?: string; AI_ENABLED?: string };
 
 export const isLocal = (env: Env) => (env as EnvLike).ENVIRONMENT === "local";
 
@@ -26,6 +26,14 @@ export const anthropicKey = (env: Env): string | undefined => {
   const k = (env as EnvLike).ANTHROPIC_API_KEY;
   return k && k.trim() ? k.trim() : undefined;
 };
+
+/**
+ * AI-off mode (CPO decision 2026-09-29, round 1 without AI). Only the exact value
+ * "false" turns AI drafting off; unset means on. When off, questions are loaded by
+ * scripts/import-questions.mjs, drafting is refused, and the "AI provider set up"
+ * item no longer blocks Send Form A.
+ */
+export const aiEnabled = (env: Env) => (env as EnvLike).AI_ENABLED !== "false";
 
 /** "AI provider set up": the key exists (or the local mock is on). */
 export const aiSetUp = (env: Env) => aiMock(env) || !!anthropicKey(env);

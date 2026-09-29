@@ -39,7 +39,7 @@ describe("wrangler.jsonc: production (top level) is unchanged", () => {
       { binding: "DB", database_name: "onboarding-knowledge-check-db", database_id: PROD_PLACEHOLDER_ID, migrations_dir: "migrations" },
     ]);
     expect(c.workflows).toEqual([{ name: "draft-topic", binding: "DRAFT_WORKFLOW", class_name: "DraftTopicWorkflow" }]);
-    expect(c.vars).toEqual({ ENVIRONMENT: "production", AI_MODEL: "claude-opus-5-5", APP_TIMEZONE: "Etc/GMT-2" });
+    expect(c.vars).toEqual({ ENVIRONMENT: "production", AI_MODEL: "claude-opus-5-5", APP_TIMEZONE: "Etc/GMT-2", AI_ENABLED: "false" });
   });
 
   it("Etc/GMT-2 is UTC+2 all year (no daylight saving)", () => {
@@ -70,6 +70,22 @@ describe("production deploy guard (npm run deploy)", () => {
     const m = withProdId(config());
     m.vars.AI_MOCK = "1";
     expect(productionProblems(m, {}).join()).toMatch(/AI_MOCK/);
+  });
+
+  it("allows AI_ENABLED only as \"true\" or \"false\" (a typo must not silently turn AI on)", () => {
+    for (const v of ["false", "true"]) {
+      const c = withProdId(config());
+      c.vars.AI_ENABLED = v;
+      expect(productionProblems(c, {})).toEqual([]);
+    }
+    const u = withProdId(config());
+    delete u.vars.AI_ENABLED;
+    expect(productionProblems(u, {})).toEqual([]);
+    for (const v of ["False", "0", "off", ""]) {
+      const c = withProdId(config());
+      c.vars.AI_ENABLED = v;
+      expect(productionProblems(c, {}).join()).toMatch(/AI_ENABLED is/);
+    }
   });
 
   it("ignores env.demo's ENVIRONMENT (the old text regex could be fooled by it)", () => {

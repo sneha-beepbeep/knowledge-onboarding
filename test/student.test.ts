@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { call, db, makeWorld, NAMES, type World } from "./helpers";
 import { seedLoop } from "./scenario";
+import { NOTICE_VERSION } from "../worker/lib/notice";
 import { flags, flagTopics, formQuestions, participation, pilot, questions } from "../worker/db/schema";
 
 /** Answers: for each Form A question, correct unless listed in `wrongTopics` (then wrong for 2 of 4). */
@@ -30,7 +31,7 @@ describe("student flow", () => {
     expect((await call("GET", "/api/my/checks", { token: w.tokens.student })).body.state).toBe("notice");
     expect((await call("GET", "/api/me", { token: w.tokens.student })).body.needsNotice).toBe(true);
     const n = await call("GET", "/api/my/notice", { token: w.tokens.student });
-    expect(n.body.version).toBe(1);
+    expect(n.body.version).toBe(NOTICE_VERSION);
     expect(n.text).toContain(NAMES.bank);
     expect(n.text).toContain(NAMES.fuo);
     expect(n.text).toContain(`${NAMES.reviewer}, who checks the questions, doesn't see your name or your answers.`);
@@ -45,7 +46,7 @@ describe("student flow", () => {
     const c = await call("GET", "/api/my/checks", { token: w.tokens.student });
     expect(c.body).toMatchObject({ state: "form_a", questionCount: 8 });
     const rows = await db().select().from(participation);
-    expect(rows.map((r) => [r.choice, r.noticeVersion])).toEqual([["decline", 1], ["take_part", 1]]);
+    expect(rows.map((r) => [r.choice, r.noticeVersion])).toEqual([["decline", NOTICE_VERSION], ["take_part", NOTICE_VERSION]]);
   });
 
   it("the notice drops the reviewer sentence when the reviewer is also the manager", async () => {

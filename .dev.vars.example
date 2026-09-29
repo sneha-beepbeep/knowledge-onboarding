@@ -2,6 +2,9 @@
 ENVIRONMENT=local
 # Canned AI drafts quoted from your uploaded text; nothing leaves the laptop.
 AI_MOCK=1
+# wrangler.jsonc sets AI_ENABLED=false (round 1, no AI), and local dev inherits it.
+# Uncomment to use mock AI drafting locally again (e.g. scripts/local-walkthrough.mjs).
+# AI_ENABLED=true
 # Local-only timezone. Production value is still open (see wrangler.jsonc).
 APP_TIMEZONE=UTC
 # Used once to create the first CPO: POST /api/auth/bootstrap

@@ -4,7 +4,7 @@ import { and, eq, ne, sql } from "drizzle-orm";
 import type { AppEnv } from "../types";
 import { ADMIN, allow } from "../auth";
 import { body, badRequest, conflict, frozen, idParam, notAvailable } from "../lib/http";
-import { aiSetUp, getDb, getPilot, getVersion } from "../lib/state";
+import { aiEnabled, aiSetUp, getDb, getPilot, getVersion } from "../lib/state";
 import { latestRun } from "../lib/bank";
 import { documentTopics, draftRuns, questions, topics } from "../db/schema";
 
@@ -23,6 +23,7 @@ export const draftRoutes = new Hono<AppEnv>().post(
     const [topic] = await db.select().from(topics).where(eq(topics.id, id));
     if (!topic) return notAvailable(c);
     if (await getVersion(db)) return frozen(c);
+    if (!aiEnabled(c.env)) return conflict(c, "AI drafting is off for this round. Questions are loaded by the pilot team.");
     if (!aiSetUp(c.env)) return conflict(c, "AI drafting isn't set up yet. The provider must be approved first.");
     const p = await getPilot(db);
     if (!p.draftingConsentAt) return conflict(c, "Confirm what drafting sends before the first draft.");

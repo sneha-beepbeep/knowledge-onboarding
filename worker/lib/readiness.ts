@@ -2,7 +2,7 @@
 // for Send Form A (technical plan §3).
 import { eq } from "drizzle-orm";
 import { pilot } from "../db/schema";
-import { aiSetUp, getPilot, getRoleMap, getVersion, type DB } from "./state";
+import { aiEnabled, aiSetUp, getPilot, getRoleMap, getVersion, type DB } from "./state";
 import { NOTICE_VERSION } from "./notice";
 
 export const REQUIRED_ROLES = ["student", "follow_up_owner", "bank_owner", "reviewer"] as const;
@@ -16,7 +16,9 @@ export async function readiness(db: DB, env: Env, now = Date.now()) {
     bankPublished: !!version,
     hrSignoff: p.hrNoticeVersion === NOTICE_VERSION && !!p.hrSignoffDate,
   };
-  const complete = Object.values(items).every(Boolean);
+  // AI-off mode: the AI item is shown as "off for this round" and doesn't count.
+  const ai = aiEnabled(env);
+  const complete = items.rolesNamed && items.bankPublished && items.hrSignoff && (!ai || items.aiSetUp);
   let readySince = p.readySince;
   if (complete && !readySince) {
     readySince = now;
@@ -25,5 +27,5 @@ export async function readiness(db: DB, env: Env, now = Date.now()) {
     readySince = null;
     await db.update(pilot).set({ readySince: null }).where(eq(pilot.id, 1));
   }
-  return { items, complete, readySince, missingRoles, pilot: p, roles, version };
+  return { items, complete, aiEnabled: ai, readySince, missingRoles, pilot: p, roles, version };
 }

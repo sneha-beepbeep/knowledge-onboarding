@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { AppEnv } from "../types";
 import { ADMIN, allow, has, isAdmin } from "../auth";
 import { body, badRequest, frozen, idParam, notAvailable, str } from "../lib/http";
-import { AI_PROVIDER_NAME, aiSetUp, dateOf, getDb, getPilot, getRoleMap, getVersion } from "../lib/state";
+import { AI_PROVIDER_NAME, aiEnabled, aiSetUp, dateOf, getDb, getPilot, getRoleMap, getVersion } from "../lib/state";
 import { allTopics, latestRun, questionCounts, topicDocuments } from "../lib/bank";
 import { documentTopics, documents, DOCUMENT_SOURCES, flagTopics, flags, pilot } from "../db/schema";
 import { isIsoDate } from "../../shared/dates";
@@ -39,6 +39,7 @@ export const bankRoutes = new Hono<AppEnv>()
       {
         published: version ? { date: dateOf(c.env, version.publishedAt) } : null,
         perTopicCount: p.perTopicCount,
+        aiEnabled: aiEnabled(c.env),
         aiSetUp: aiSetUp(c.env),
         consentGiven: !!p.draftingConsentAt,
         providerName: AI_PROVIDER_NAME,

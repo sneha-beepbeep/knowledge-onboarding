@@ -5,6 +5,7 @@ import { Page, Skeleton, LoadError, ConfirmDialog, DataTable, StatusLabel, LiveR
 import { useLoad } from "../lib/useLoad";
 import { Link } from "../lib/router";
 import { formatDate } from "../../shared/dates";
+import { useMe } from "../lib/me";
 import { MIN_PER_FORM, thresholdExplanation } from "../../shared/scoring";
 
 type Data = Awaited<ReturnType<typeof load>>;
@@ -52,6 +53,7 @@ function Published({ data }: { data: Data }) {
 type Split = Record<ListKey, number[]>;
 
 function Draft({ data, reload }: { data: Data; reload: () => Promise<void> }) {
+  const ai = useMe().me.aiEnabled;
   const [splits, setSplits] = useState<Record<number, Split>>({});
   const [included, setIncluded] = useState<Record<number, boolean>>({});
   const [threshold, setThreshold] = useState<string>(String(data.defaultThreshold));
@@ -111,7 +113,11 @@ function Draft({ data, reload }: { data: Data; reload: () => Promise<void> }) {
         <Link to="/bank">Back to the bank</Link>
       </p>
       {data.topics.length === 0 ? (
-        <p>No approved questions yet. Draft and review questions on the bank page first.</p>
+        <p>
+          {ai
+            ? "No approved questions yet. Draft and review questions on the bank page first."
+            : "No approved questions yet. Review the loaded questions first."}
+        </p>
       ) : (
         <>
           <DataTable head={["Topic", "Approved questions", "Form A", "Form B", "Included"]}>

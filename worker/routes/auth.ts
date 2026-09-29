@@ -4,7 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 import type { AppEnv } from "../types";
 import { body, badRequest, notAvailable, str } from "../lib/http";
 import { createSession, exchangeLink, has, safeEqual } from "../auth";
-import { getDb, getRoleMap } from "../lib/state";
+import { aiEnabled, getDb, getRoleMap } from "../lib/state";
 import { people, questions, roleAssignments, sessions } from "../db/schema";
 import { openFlagCount } from "../lib/flags";
 import { studentNeedsNotice } from "../lib/student";
@@ -65,6 +65,8 @@ export const authRoutes = new Hono<AppEnv>()
         badges,
         bankOwnerName: roleMap.bank_owner?.name ?? null,
         needsNotice: has(me, "student") ? await studentNeedsNotice(db, me.personId) : false,
+        // AI-off mode (round 1): screens drop drafting controls and AI wording.
+        aiEnabled: aiEnabled(c.env),
       },
       200,
     );
