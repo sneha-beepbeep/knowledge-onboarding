@@ -5,8 +5,10 @@ AI_MOCK=1
 # wrangler.jsonc sets AI_ENABLED=false (round 1, no AI), and local dev inherits it.
 # Uncomment to use mock AI drafting locally again (e.g. scripts/local-walkthrough.mjs).
 # AI_ENABLED=true
-# Local-only timezone. Production value is still open (see wrangler.jsonc).
-APP_TIMEZONE=UTC
+# Timezone: local dev inherits APP_TIMEZONE=Etc/GMT-2 (fixed GMT+2 all year) from
+# wrangler.jsonc, the same as production, so "today", due dates and overdue match.
+# Only set it here to test another zone on purpose.
+# APP_TIMEZONE=Etc/GMT-2
 # Used once to create the first CPO: POST /api/auth/bootstrap
 BOOTSTRAP_TOKEN=local-bootstrap-token
 # Leave unset locally. In production: `wrangler secret put ANTHROPIC_API_KEY`
