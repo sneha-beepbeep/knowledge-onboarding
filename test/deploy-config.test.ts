@@ -1,6 +1,11 @@
 // Deploy config: the production guard still guards production only, env.demo is
 // fully separate, and the deploy:demo helpers behave. No fs, no network: the real
 // wrangler.jsonc is imported as text.
+//
+// `deploy:demo` writes the real demo database_id into the committed wrangler.jsonc
+// (and rewrites it whenever the demo DB is recreated). So the assertions below run on
+// an in-memory copy with the demo id reset to the placeholder, and only the
+// "live config" block looks at the committed demo id, accepting either form.
 import { describe, expect, it } from "vitest";
 import wranglerText from "../wrangler.jsonc?raw";
 import {
@@ -25,7 +30,10 @@ import {
 
 const REAL_ID = "3f2a1c4e-9b7d-4e21-8a6f-0c5d2e7b9a11";
 const OTHER_ID = "7c1e2d3f-4a5b-4c6d-8e9f-a0b1c2d3e4f5";
-const config = () => parseJsonc(wranglerText);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// The committed file with env.demo's database_id reset to the placeholder.
+const placeholderText = setDemoDatabaseId(wranglerText, DEMO_PLACEHOLDER_ID);
+const config = () => parseJsonc(placeholderText);
 const withProdId = (c: ReturnType<typeof config>, id = REAL_ID) => {
   c.d1_databases[0].database_id = id;
   return c;
@@ -136,9 +144,29 @@ describe("env.demo is a separate demo copy", () => {
   });
 });
 
+describe("the committed wrangler.jsonc (live demo id)", () => {
+  const live = () => parseJsonc(wranglerText);
+
+  it("differs from the placeholder copy only in env.demo's database_id", () => {
+    const c = live();
+    const id = c.env.demo.d1_databases[0].database_id;
+    expect(id === DEMO_PLACEHOLDER_ID || UUID.test(id)).toBe(true);
+    expect(id).not.toBe(PROD_PLACEHOLDER_ID);
+    c.env.demo.d1_databases[0].database_id = DEMO_PLACEHOLDER_ID;
+    expect(c).toEqual(config());
+  });
+
+  it("passes the demo checks, and the production guard still blocks only on the production id", () => {
+    expect(demoProblems(live())).toEqual([]);
+    const p = productionProblems(live(), {});
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatch(/database_id is the local placeholder/);
+  });
+});
+
 describe("setDemoDatabaseId", () => {
   it("changes only env.demo's database_id, keeps comments, and is idempotent", () => {
-    const next = setDemoDatabaseId(wranglerText, REAL_ID);
+    const next = setDemoDatabaseId(placeholderText, REAL_ID);
     const before = config();
     const after = parseJsonc(next);
     expect(after.env.demo.d1_databases[0].database_id).toBe(REAL_ID);
@@ -146,7 +174,7 @@ describe("setDemoDatabaseId", () => {
     after.env.demo.d1_databases[0].database_id = DEMO_PLACEHOLDER_ID;
     expect(after).toEqual(before);
     expect(next).toContain("// DEMO COPY");
-    expect(next.split("\n").length).toBe(wranglerText.split("\n").length);
+    expect(next.split("\n").length).toBe(placeholderText.split("\n").length);
     expect(demoProblems(parseJsonc(next), { requireId: true })).toEqual([]);
     // Re-running with another id (e.g. DB recreated) replaces it again.
     expect(parseJsonc(setDemoDatabaseId(next, OTHER_ID)).env.demo.d1_databases[0].database_id).toBe(OTHER_ID);
@@ -154,8 +182,8 @@ describe("setDemoDatabaseId", () => {
   });
 
   it("refuses anything that isn't a D1 id", () => {
-    expect(() => setDemoDatabaseId(wranglerText, "knowledge-check-demo-db")).toThrow(/not a D1 database id/);
-    expect(() => setDemoDatabaseId(wranglerText, '"; "x": "')).toThrow();
+    expect(() => setDemoDatabaseId(placeholderText, "knowledge-check-demo-db")).toThrow(/not a D1 database id/);
+    expect(() => setDemoDatabaseId(placeholderText, '"; "x": "')).toThrow();
   });
 });
 

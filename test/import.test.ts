@@ -17,7 +17,7 @@ import {
   type ImportFile,
 } from "../scripts/lib/bank-import";
 import { parseImportArgs, remoteTarget } from "../scripts/lib/d1-target.mjs";
-import { DEMO_DB, parseJsonc, setDemoDatabaseId } from "../scripts/lib/wrangler-config.mjs";
+import { DEMO_DB, DEMO_PLACEHOLDER_ID, parseJsonc, setDemoDatabaseId } from "../scripts/lib/wrangler-config.mjs";
 import { DEMO_DOC_NAME, DEMO_DOC_TEXT, DEMO_DOC_VERSION_DATE, DEMO_QUESTIONS, DEMO_TOPICS } from "../scripts/seed/slack-demo-data";
 import { call, makeWorld, type World } from "./helpers";
 
@@ -54,7 +54,10 @@ describe("import arguments", () => {
 
 describe("remote targets", () => {
   const REAL_ID = "3f2a1c4e-9b7d-4e21-8a6f-0c5d2e7b9a11";
-  const config = () => parseJsonc(wranglerText);
+  // deploy:demo writes the real demo id into wrangler.jsonc, so start from a copy with
+  // the demo placeholder rather than whatever id is committed today.
+  const placeholderText = setDemoDatabaseId(wranglerText, DEMO_PLACEHOLDER_ID);
+  const config = () => parseJsonc(placeholderText);
 
   it("production is refused while the production deploy guard fails", () => {
     const t = remoteTarget(config(), "onboarding-knowledge-check-db", {});
@@ -75,7 +78,7 @@ describe("remote targets", () => {
 
   it("the demo DB needs a real demo id and targets env.demo", () => {
     expect(remoteTarget(config(), DEMO_DB).problems.join()).toMatch(/not a real id/);
-    const c = parseJsonc(setDemoDatabaseId(wranglerText, REAL_ID));
+    const c = parseJsonc(setDemoDatabaseId(placeholderText, REAL_ID));
     const t = remoteTarget(c, DEMO_DB);
     expect(t.problems).toEqual([]);
     expect(t.argv).toEqual([DEMO_DB, "--remote", "--config", "wrangler.jsonc", "--env", "demo"]);
