@@ -9,7 +9,7 @@ Scope is the 12 Musts (F1–F12) and the 18 screens and dialogs (S0, A1–A6 inc
 **Still open after approval** (none of these blocks the build):
 - ~~`APP_TIMEZONE` has not been provided yet.~~ Decided: `Etc/GMT-2` (fixed GMT+2 all year, no daylight saving), section 13.
 - The Cloudflare account has not been created yet.
-- The S/N/E role mapping is still awaiting CPO confirmation.
+- ~~The S/N/E role mapping is still awaiting CPO confirmation.~~ Confirmed 2026-09-29: S = manager / follow-up owner, N = question bank owner, E = SME reviewer.
 
 ---
 
@@ -341,7 +341,7 @@ The CPO approved all nine engineer recommendations on 2026-09-29. The "Decision"
 | 7 | Cloudflare account, region, timezone | **Company-owned account, EU data location.** Timezone decided: `APP_TIMEZONE` = `Etc/GMT-2` (section 13). Still open: the account has not been created yet |
 | 8 | Who can issue sign-in links | **Admins can issue them. Links for admin roles and assigning the CPO role are CPO only** |
 | 9 | Notice "Questions? Contact [name / HR contact]" | **Default to the bank owner's name.** If HR wants an HR contact, it is a text change and a notice version increase |
-| Open | S/N/E role mapping | **Awaiting CPO confirmation** |
+| Decided | S/N/E role mapping | **Confirmed by the CPO (2026-09-29):** S = manager / follow-up owner, N = question bank owner, E = SME reviewer |
 | Risk | PDF extraction quality (columns, hyphenation) causes grounding discards | Discards are counted and visible. Pasting text is the fallback. A3a's scanned-PDF message |
 | Risk | A sign-in link is forwarded | Short expiry, revoke by issuing a new link, share only privately. Acceptable at n=1 |
 | Risk | Workflows does not run under the `vite dev` Cloudflare plugin | Checked early in step 6. Fallback per decision 4 |
