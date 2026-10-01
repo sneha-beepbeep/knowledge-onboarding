@@ -33,7 +33,10 @@ export async function safeEqual(a: string, b: string): Promise<boolean> {
   return diff === 0;
 }
 
-/** Issues a new sign-in link for a person, revoking any earlier link. Returns the raw token. */
+/**
+ * Issues a new sign-in link for a person, revoking any earlier link and ending all of
+ * that person's sessions (technical plan §5: a new link revokes access). Returns the raw token.
+ */
 export async function issueLink(db: DB, personId: number, now = Date.now()): Promise<string> {
   const token = randomToken();
   const tokenHash = await sha256(token);
@@ -42,6 +45,7 @@ export async function issueLink(db: DB, personId: number, now = Date.now()): Pro
       .update(signInLinks)
       .set({ revokedAt: now })
       .where(and(eq(signInLinks.personId, personId), isNull(signInLinks.revokedAt))),
+    db.delete(sessions).where(eq(sessions.personId, personId)),
     db.insert(signInLinks).values({ personId, tokenHash, createdAt: now, expiresAt: now + LINK_TTL }),
   ]);
   return token;

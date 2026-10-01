@@ -129,7 +129,7 @@ export const peopleRoutes = new Hono<AppEnv>()
     },
   )
 
-  // Issues a new sign-in link (revoking the old one). Links for admins are CPO only.
+  // Issues a new sign-in link (revoking the old one and ending the person's sessions). Links for admins are CPO only.
   .post("/people/:id/link", allow(...ADMIN), async (c) => {
     const id = idParam(c.req.param("id"));
     if (!id) return notAvailable(c);

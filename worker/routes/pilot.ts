@@ -52,7 +52,8 @@ export const pilotRoutes = new Hono<AppEnv>()
     );
   })
 
-  // A5: creates the student's sign-in link, which is the Form A link. Replaces any earlier link.
+  // A5: creates the student's sign-in link, which is the Form A link. Replaces any earlier link
+  // and signs the student out everywhere (issueLink).
   .post("/pilot/form-a/link", allow(...ADMIN), async (c) => {
     const db = getDb(c.env);
     const r = await readiness(db, c.env);

@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { call, db, makeWorld, NAMES, wipe, type World } from "./helpers";
 import { issueLink } from "../worker/auth";
-import { signInLinks } from "../worker/db/schema";
+import { sessions, signInLinks } from "../worker/db/schema";
+import { seedLoop } from "./scenario";
 
 describe("bootstrap", () => {
   beforeEach(wipe);
@@ -41,6 +42,37 @@ describe("sign-in links and sessions", () => {
     // A new link revokes the old one.
     await issueLink(db(), w.ids.student);
     expect((await call("POST", "/api/auth/exchange", { json: { token } })).status).toBe(401);
+  });
+
+  it("a new link ends the person's existing sessions, and only theirs", async () => {
+    // The student is signed in on two devices with the same link.
+    const first = await issueLink(db(), w.ids.student);
+    const phone = (await call("POST", "/api/auth/exchange", { json: { token: first } })).body.sessionToken;
+    const laptop = (await call("POST", "/api/auth/exchange", { json: { token: first } })).body.sessionToken;
+    expect((await call("GET", "/api/me", { token: phone })).status).toBe(200);
+    expect((await call("GET", "/api/me", { token: laptop })).status).toBe(200);
+    await issueLink(db(), w.ids.student);
+    expect((await call("GET", "/api/me", { token: phone })).status).toBe(401);
+    expect((await call("GET", "/api/me", { token: laptop })).status).toBe(401);
+    expect(await db().select().from(sessions).where(eq(sessions.personId, w.ids.student))).toHaveLength(0);
+    // Everyone else stays signed in.
+    for (const t of [w.tokens.fuo, w.tokens.bank, w.tokens.reviewer, w.tokens.cpo, w.outsider.token])
+      expect((await call("GET", "/api/me", { token: t })).status).toBe(200);
+  });
+
+  it("re-creating the link on A2 or A5 signs the person out; the new link signs them back in", async () => {
+    const viaA2 = await call("POST", `/api/people/${w.ids.reviewer}/link`, { token: w.tokens.bank });
+    expect(viaA2.status).toBe(200);
+    expect((await call("GET", "/api/me", { token: w.tokens.reviewer })).status).toBe(401);
+    expect((await call("GET", "/api/me", { token: w.tokens.bank })).status).toBe(200); // the issuer is untouched
+
+    await seedLoop(w, { submitA: false });
+    const stu = (await call("POST", "/api/auth/exchange", { json: { token: await issueLink(db(), w.ids.student) } })).body.sessionToken;
+    const viaA5 = await call("POST", "/api/pilot/form-a/link", { token: w.tokens.bank });
+    expect(viaA5.status).toBe(200);
+    expect((await call("GET", "/api/me", { token: stu })).status).toBe(401);
+    const back = await call("POST", "/api/auth/exchange", { json: { token: viaA5.body.url.split("#t=")[1] } });
+    expect((await call("GET", "/api/me", { token: back.body.sessionToken })).body.roles).toEqual(["student"]);
   });
 
   it("refuses expired links", async () => {

@@ -42,7 +42,10 @@ describe("A2 people & roles", () => {
     const ok = await call("POST", `/api/people/${w.ids.bank}/link`, { token: w.tokens.cpo });
     expect(ok.status).toBe(200);
     expect(ok.body.url).toMatch(/^https:\/\/kc\.test\/start#t=[A-Za-z0-9_-]{43}$/);
-    const rev = await call("POST", `/api/people/${w.ids.reviewer}/link`, { token: w.tokens.bank });
+    // The new link ends the bank owner's old session; they sign in again with it.
+    expect((await call("GET", "/api/me", { token: w.tokens.bank })).status).toBe(401);
+    const bank = (await call("POST", "/api/auth/exchange", { json: { token: ok.body.url.split("#t=")[1] } })).body.sessionToken;
+    const rev = await call("POST", `/api/people/${w.ids.reviewer}/link`, { token: bank });
     expect(rev.status).toBe(200);
     // The link signs the reviewer in.
     const token = rev.body.url.split("#t=")[1];
