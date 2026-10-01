@@ -221,13 +221,13 @@ export function TopicCard({
           </li>
         ))}
       </ul>
-      <h3>Drafts</h3>
+      <h3>{data.aiEnabled ? "Drafts" : "Questions"}</h3>
       <p>
         {c.total === 0
           ? data.aiEnabled
             ? "Not drafted"
             : "No questions loaded yet"
-          : `${c.total} drafts: ${c.approved} approved, ${c.rejected} rejected, ${c.pending} waiting for review`}
+          : `${c.total} ${data.aiEnabled ? "drafts" : "questions"}: ${c.approved} approved, ${c.rejected} rejected, ${c.pending} waiting for review`}
       </p>
       {c.total > 0 && c.approved === 0 && c.pending === 0 && (
         <p className="notice notice-warn">

@@ -4,7 +4,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import type { AppEnv } from "../types";
 import { ADMIN, allow } from "../auth";
 import { body, badRequest, conflict, frozen } from "../lib/http";
-import { dateOf, getDb, getPilot, getVersion } from "../lib/state";
+import { aiEnabled, dateOf, getDb, getPilot, getVersion } from "../lib/state";
 import { checkAssignment, defaultSplit } from "../lib/split";
 import { formQuestions, questions, topics } from "../db/schema";
 import { DEFAULT_THRESHOLD } from "../../shared/scoring";
@@ -95,8 +95,11 @@ export const publishRoutes = new Hono<AppEnv>()
         .select({ n: sql<number>`count(*)` })
         .from(questions)
         .where(eq(questions.status, "pending"));
-      if (Number(pending) > 0)
-        return conflict(c, `${pending} ${Number(pending) === 1 ? "draft is" : "drafts are"} still waiting for review.`);
+      if (Number(pending) > 0) {
+        // Round 1 (AI off): the questions are hand-written, so don't call them drafts.
+        const noun = aiEnabled(c.env) ? "draft" : "question";
+        return conflict(c, `${pending} ${Number(pending) === 1 ? `${noun} is` : `${noun}s are`} still waiting for review.`);
+      }
 
       const approved = await db
         .select({ id: questions.id, topicId: questions.topicId })

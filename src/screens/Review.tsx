@@ -110,6 +110,7 @@ const loadQ = (id: string) => ok(api.review.questions[":id"].$get({ param: { id 
 
 export function V2Question({ params }: { params: Record<string, string> }) {
   const { data, error, loading, reload } = useLoad(() => loadQ(params.id), [params.id]);
+  const ai = useMe().me.aiEnabled;
   const [mode, setMode] = useState<"view" | "edit" | "reject">("view");
   const [msg, setMsg] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -226,7 +227,7 @@ export function V2Question({ params }: { params: Record<string, string> }) {
           </section>
 
           <section aria-labelledby="draft-h" className="card">
-            <h2 id="draft-h">Draft question</h2>
+            <h2 id="draft-h">{ai ? "Draft question" : "Question"}</h2>
             <p className="muted">Topic: {data.topic.name}</p>
             <p>{reviewed ? statusLabel(data.status, data.editKind) : <StatusLabel tone="wait">Waiting for review</StatusLabel>}</p>
             {mode === "edit" ? (

@@ -8,7 +8,7 @@ import app from "../worker/index";
 import { aiEnabled } from "../worker/lib/state";
 import { renderNotice, NOTICE_VERSION } from "../worker/lib/notice";
 import { roleDescription } from "../worker/routes/people";
-import { draftRuns, questions } from "../worker/db/schema";
+import { draftRuns, questions, topics } from "../worker/db/schema";
 import { db, makeWorld, type World } from "./helpers";
 import { seedLoop } from "./scenario";
 
@@ -109,6 +109,28 @@ describe("AI-off mode through the API", () => {
     const bank = roles.body.roles.find((r: { role: string }) => r.role === "bank_owner");
     expect(bank.description).not.toMatch(/AI/);
     expect(roleDescription("bank_owner", true)).toMatch(/runs AI drafting/);
+  });
+});
+
+describe("round-1 wording", () => {
+  let w: World;
+  beforeEach(async () => {
+    w = await makeWorld();
+  });
+
+  it("A4's publish block calls waiting items questions, not drafts, when AI is off", async () => {
+    const [t] = await db().insert(topics).values({ name: "Returns process" }).returning();
+    const now = Date.now();
+    await db().insert(questions).values({
+      topicId: t.id, text: "Still waiting?", options: ["A", "B", "C", "D"], correctIndex: 0,
+      status: "pending", createdAt: now, updatedAt: now,
+    });
+    const json = { thresholdPct: 70, topics: [] };
+    const off = await callWith(OFF, "POST", "/api/publish", { token: w.tokens.bank, json });
+    expect(off.status).toBe(409);
+    expect(off.body.error).toBe("1 question is still waiting for review.");
+    const on = await callWith({ AI_ENABLED: "true" }, "POST", "/api/publish", { token: w.tokens.bank, json });
+    expect(on.body.error).toBe("1 draft is still waiting for review.");
   });
 });
 

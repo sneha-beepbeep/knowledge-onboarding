@@ -72,7 +72,8 @@ function Draft({ data, reload }: { data: Data; reload: () => Promise<void> }) {
 
   const incl = data.topics.filter((t) => included[t.id] && splits[t.id]);
   const reasons: string[] = [];
-  if (data.pendingCount > 0) reasons.push(`${data.pendingCount} ${data.pendingCount === 1 ? "draft is" : "drafts are"} still waiting for review.`);
+  const noun = ai ? "draft" : "question";
+  if (data.pendingCount > 0) reasons.push(`${data.pendingCount} ${data.pendingCount === 1 ? `${noun} is` : `${noun}s are`} still waiting for review.`);
   if (!incl.length) reasons.push("Include at least one topic.");
   for (const t of incl)
     if (splits[t.id].A.length < MIN_PER_FORM)
