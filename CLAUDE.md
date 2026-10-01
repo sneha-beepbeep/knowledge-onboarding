@@ -20,14 +20,14 @@ You are the **orchestrator** for a simulated software product team. The user is 
 
 ## Current status
 
-- **Stage:** 6 — `/build` accepted by the CPO (2026-09-29); ready for `/test`. Branch `build/knowledge-check` (not merged or pushed); HEAD `8d65aff`; 237 tests pass.
+- **Stage:** 6 — `/build` accepted by the CPO (2026-09-29); ready for `/test`. Branch `build/knowledge-check` (not merged or pushed); HEAD `d696061`; 233 of 237 tests pass (2026-10-01): 4 tests in `test/deploy-config.test.ts` and `test/import.test.ts` still expect the demo `database_id` placeholder, which `d696061` replaced with the real id. The tests need fixing, not the config.
 - **Last artifact:** the implementation on `build/knowledge-check`, plus `docs/prd.md` rev. 3, `docs/design-spec.md` rev. 3, `docs/technical-plan.md` (post-approval changes, section 13).
 - **CPO approval pending on:** nothing.
 - **Open before go-live:** HR approval of notice v2 (blocks Send Form A); the production D1 database id (blocks `npm run deploy`); N writes and imports the real round-1 questions; E reviews them.
 - **Known leftovers for `/test` to log:** the design spec still says A6/Flow 4 keeps "anonymised question statistics" (the app says "review outcomes"); a few round-2 phrases show in round 1 (V1 "may draft more", A3 "Draft 5 more", A4 "drafts still waiting", §6 "Drafts ready"); the N≠E error text in the spec differs slightly from the app's; the demo's admin side shows AI drafting and the kill line, unlike the pilot.
-- **Demo deploy:** ready. The CPO runs `npm run deploy:demo -- --seed` whenever wanted.
+- **Demo deploy:** done. `knowledge-check-demo` deployed 2026-09-29 (D1 `knowledge-check-demo-db`, id recorded in `d696061`), using the CPO's personal Cloudflare login, not the company account.
 - **Local test state:** Sneha (CPO, bank owner, reviewer, follow-up owner); Test Student (student); Slack seed loaded; version published. HR sign-off must be re-recorded for notice v2. Restart `npm run dev` to pick up AI-off.
-- **Uncommitted:** CLAUDE.md, README.md, docs/prd.md, docs/design-spec.md (awaiting the CPO's go-ahead to commit).
+- **Uncommitted:** nothing (docs committed in `bd2a413`). No git remote is configured.
 - **Decision log:**
   - 2026-09-29 — `/ceo-review`: **Pursue with caveats.** Pitch scoped to "AI-generated knowledge-check quizzes, scored and saved, built from onboarding material, for working students newly joining our company within the context of internal employee onboarding." Rationale: ~1M/yr in errors and rework; LMS/HR quiz tools ruled out as too complex; framed as a pilot. Conditions 1–3 (pitch/pilot size, baseline + 90-day kill signal, share of the 1M attributable to onboarding) must be resolved at `/kickoff`. Web articles out of scope for the pilot unless kickoff justifies them.
   - 2026-09-29 — CPO approved the CEO review verdict and confirmed the scoped pitch wording (condition 1, pitch half; pilot size still open).
