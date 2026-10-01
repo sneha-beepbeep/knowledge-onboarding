@@ -1,6 +1,6 @@
 # Design Spec: Onboarding Knowledge Check (working title)
 
-*Stage 4 `/design`, 2026-09-29, rev. 3. **CPO-approved.** Rev. 2 was approved on 2026-09-29. Rev. 3 makes the minimum changes needed after the CPO's later decisions of 2026-09-29 (round 1 without AI, notice version 2, bank owner ≠ reviewer); see the rev. 3 changelog at the end. Source: `docs/prd.md` (CPO-approved, rev. 2; rev. 3 is being applied in parallel). Context: `docs/opportunity-brief.md`, `docs/ceo-review.md`.*
+*Stage 4 `/design`, 2026-09-29, rev. 3. **CPO-approved.** Rev. 2 was approved on 2026-09-29. Rev. 3 makes the minimum changes needed after the CPO's later decisions of 2026-09-29 (round 1 without AI, notice version 2, bank owner ≠ reviewer); see the rev. 3 changelog at the end. Source: `docs/prd.md` (CPO-approved, rev. 3). Context: `docs/opportunity-brief.md`, `docs/ceo-review.md`.*
 
 **What this spec does not decide:** the tech stack, sign-in mechanism, AI provider, hosting, and whether notifications go by email. Those belong to `/plan`. Where the design depends on one of them, the dependency is marked **[plan]**. HR approval of the notice (version 2) is still open (section 12.3). The design handles "not yet decided" as an explicit state and does not assume an answer.
 
@@ -143,7 +143,7 @@ The only extra step is the notice. Section 6 requires it before the first attemp
 ### Flow 4: Admin export and delete
 
 1. **Bank owner or CPO, A6:** choose *Download CSV files*. They receive the five files described in section 5 under A6. A warning explains that the files contain personal data.
-2. **Delete:** choose a person, and the app shows exactly what will be deleted (counts per data type) and what stays (anonymised question statistics and review outcomes). The admin types the person's name to confirm, and the data is deleted permanently. A1 records *Data deleted for [name] on [date] by [admin]*: a record that the deletion happened, not the deleted data.
+2. **Delete:** choose a person, and the app shows exactly what will be deleted (counts per data type) and what stays (review outcomes, which contain no names). The admin types the person's name to confirm, and the data is deleted permanently. A1 records *Data deleted for [name] on [date] by [admin]*: a record that the deletion happened, not the deleted data.
 3. The retention date (30 days after the 90-day review) is shown on A1 and A6 as a reminder. Deletion is not automatic (not a Must).
 
 ---
@@ -196,7 +196,7 @@ A list of the four roles. Each row shows the role name, a one-line description (
 
 - The CPO appears as sponsor automatically (they have admin access).
 - **Warnings** (shown as text, never blocking; decision 7): the reviewer is also the follow-up owner ("The PRD recommends a reviewer who isn't the manager. This person will see the student's named results as their manager."). The reviewer is also an admin ("This person will see named results through their admin access."). Either warning also notes: "The student notice will list this person once, under their other role."
-- **Bank owner ≠ reviewer (rev. 3, PRD rev. 3):** enforced in production only. In production, an assignment that would make the bank owner and the reviewer the same person is refused with the error "The bank owner and the reviewer must be different people." Locally and in the demo, it stays the "reviewer is also an admin" warning above.
+- **Bank owner ≠ reviewer (rev. 3, PRD rev. 3):** enforced in production only. In production, an assignment that would make the bank owner and the reviewer the same person is refused with the error "The question bank owner and the content reviewer must be different people, so the reviewer isn't checking their own questions. Choose someone else." Locally and in the demo, it stays the "reviewer is also an admin" warning above.
 - **Changing the follow-up owner** after a flag exists moves the open flag to the new owner. The old owner loses access to the student's results. A confirmation dialog explains this.
 - **Unassigned roles:** the row reads "Not assigned. Required before Form A can be sent." Screens and messages that would name this person use the role label instead ("your manager").
 
@@ -208,8 +208,8 @@ Layout: one card per topic. Above the cards: *Add document* and the setting *Que
 
 Each topic card shows:
 - Its documents (name, version date) with *Remove*. Removing a document does not delete drafts already made from it. They stay in review, and their source passage is kept.
-- Draft status: "Not drafted" / "Drafting…" / "10 drafts: 6 approved, 1 rejected, 3 waiting for review" / an error.
-- Actions: *Draft questions* (the first time), *Draft 5 more* (after that).
+- Draft status: "Not drafted" / "Drafting…" / "10 drafts: 6 approved, 1 rejected, 3 waiting for review" / an error. *Round 1:* headed "Questions", reading "No questions loaded yet" / "10 questions: 6 approved, 1 rejected, 3 waiting for review".
+- Actions (round 2 / when AI_ENABLED only): *Draft questions* (the first time), *Draft 5 more* (after that).
 - A readiness line for publishing: "Needs 8 approved (4 per form). Has 6."
 
 **Before drafting for the first time (once per bank):** a confirmation dialog: "Drafting sends the text of this topic's documents to [provider name] **[plan]**. Only onboarding material is sent. No names, answers or results are ever sent. Only continue if these documents are cleared for this provider." Buttons: *Continue*, *Cancel*.
@@ -222,7 +222,7 @@ Each topic card shows:
 - **AI drafting failed (the whole topic):** "Drafting failed for [topic]. [Short reason: service unavailable / timed out / document too long.] Nothing was saved." Button: *Try again*.
 - **Partial or invalid output:** drafts with no answer, not exactly 4 options, or a source passage that cannot be found word for word in the uploaded text are discarded before review. The card shows: "2 drafts were discarded because they didn't quote your material correctly." Discarded drafts do not count towards M3 but are counted in the export (see A6).
 - **All drafts for a topic rejected:** "All drafts for [topic] were rejected. Draft more, add clearer material, or leave this topic out of the version." The action *Leave this topic out* is on A4.
-- *Short on approved questions:* the readiness line reads "Needs 8 approved. Has 5" and offers *Draft 5 more*.
+- *Short on approved questions:* the readiness line reads "Needs 8 approved. Has 5" and, in round 2 / when AI_ENABLED, offers *Draft 5 more*.
 - *After publish:* the whole page is read-only, with the banner "Version 1 was published on [date]. It stays unchanged for the whole pilot." (F13: no editing after publish; decision 4.)
 
 ### A3a Add document (dialog, F1)
@@ -253,7 +253,7 @@ Layout: a table with one row per topic. Columns: Topic, Approved questions, Form
 - **Publish** opens a confirmation: "Publish version 1? The questions, forms and threshold can't be changed after this, and this version is used for the whole pilot. Every attempt will be scored against exactly these questions." Buttons: *Publish*, *Cancel*.
 
 Rules and states:
-- *Blocked:* "Publish" is disabled while any included topic has fewer than 3 questions per form, or any draft is still waiting for review. The reason is listed per topic: "[Topic]: 5 approved. Needs at least 6 (3 per form)." / "3 drafts are still waiting for review."
+- *Blocked:* "Publish" is disabled while any included topic has fewer than 3 questions per form, or any draft is still waiting for review. The reason is listed per topic: "[Topic]: 5 approved. Needs at least 6 (3 per form)." / "3 drafts are still waiting for review." (round 2 / when AI_ENABLED; round 1 says "3 questions are still waiting for review.")
 - *Minimum 3 per form* matches the bottom of the PRD's 3-5 range. Topics below the minimum must be excluded or topped up (see P4). Topics that reach the minimum but not the default of 4 are published at their lower count, and the threshold line shows what that means for them.
 - *No topics included:* "Include at least one topic."
 - *Already published:* the page is read-only and shows the published forms.
@@ -284,7 +284,7 @@ Warning shown next to the button: "These files contain personal data about [stud
 States: *Nothing to export yet* shows "Nothing to export yet" and disables the button. *Export failed* shows "The export couldn't be created. Try again."
 
 **Delete a person's data.** Choose a person (the list shows anyone with attempts, flags or a participation record). The panel then shows:
-"This permanently deletes for [name]: 2 attempts, 40 answers, 1 flag, 2 follow-up entries, 1 participation record. It keeps: anonymised question statistics and review outcomes (these contain no names). It can't be undone. Files that have already been exported are not affected. Delete those separately."
+"This permanently deletes for [name]: 2 attempts, 40 answers, 1 flag, 2 follow-up entries, 1 participation record. It keeps: review outcomes (these contain no names). It can't be undone. Files that have already been exported are not affected. Delete those separately."
 Confirmation: type the person's full name, then *Delete permanently*.
 - *Success:* "Data for [name] was deleted." A1 then shows the deletion record.
 - *Failed:* "Nothing was deleted. Try again." (All-or-nothing: no partial deletes.)
@@ -304,15 +304,15 @@ The **reviewer checklist** (PRD §5) is shown in a side panel and stays visible 
 5. No confidential detail that shouldn't appear in a quiz.
 
 States:
-- *Empty (nothing drafted yet):* "No questions to review yet. You'll be notified when drafts are ready."
-- *All reviewed:* "All caught up. [Bank owner] can now publish, or may draft more questions."
+- *Empty (nothing drafted yet):* "No questions to review yet. You'll be notified when drafts are ready." (round 2 / when AI_ENABLED). *Round 1:* "No questions to review yet. They appear here once the pilot team loads them."
+- *All reviewed:* "All caught up. [Bank owner] can now publish, or may draft more questions." In round 1 the ", or may draft more questions" part is omitted.
 - *After publish:* read-only, with "Version 1 is published. Reviews are closed."
 
 ### V2 Review a question (F2, F3, §5)
 
 Layout: two columns on wide screens and stacked on narrow ones, with the source first.
 - **Left: Source.** Document name, version date, and the quoted passage with about two paragraphs of context around it. The passage is highlighted with a background colour **and** marked with a left border and the label "Quoted passage", so colour is not the only cue.
-- **Right: Draft question.** Topic, question text, and options A-D with the correct option marked by a text label, "Correct answer", plus an icon.
+- **Right: Draft question** (headed "Question" in round 1). Topic, question text, and options A-D with the correct option marked by a text label, "Correct answer", plus an icon.
 
 Actions (keyboard shortcuts shown on the buttons):
 - **Approve** (A): saves the outcome "approved as is" and moves to the next question.
@@ -388,7 +388,7 @@ The same layout for the student, their follow-up owner and the admins. Only the 
 - **Answers:** grouped by topic and expanded by default for weak topics. For each question: the question text, "Your answer: B …", "Correct answer: C …" (text labels plus icons), and "From: [document name]".
 - **Footer:** "Think a question is wrong? Mention it in your debrief. The reviewer will check it." Reporting a wrong question is not built in-app (PRD §5 says in-app only if cheap, and it is not a Must). A confirmed wrong question does not change the scores shown here. It is corrected in the export analysis (decision 3).
 - *For the manager and admins:* a link to M2 for this attempt's flag, if one exists.
-- *Error:* "Couldn't load these results. Reload the page." *Deleted:* "These results have been deleted."
+- *Error:* "Couldn't load these results. Reload the page." *Deleted:* "This page isn't available to you. If these results existed, they may have been deleted." This is deliberately the same response as S0's "Page outside your role", whether or not the results ever existed, so the page reveals nothing about whether a person has results.
 
 ### R2 Form A vs. Form B comparison (shared view; F9)
 
@@ -429,7 +429,7 @@ The PRD allows email (preferred) or an in-app list (F7). No reminders or escalat
 
 | Trigger | To | Content |
 |---|---|---|
-| Drafts ready | Reviewer | "[N] questions for [topics] are ready for review." Link to V1 |
+| Drafts ready (round 2 / when AI_ENABLED) | Reviewer | "[N] questions for [topics] are ready for review." Link to V1 |
 | Form A sent | Student | See §7.3 |
 | Flag created | Follow-up owner | "[Student] finished knowledge check 1. [N] topics scored below [70%]: [topics]. Please go over them and log what you did by [date] (5 working days)." Link to M2 |
 | Follow-up fully logged | Student | "Knowledge check 2 is ready. Same topics, different questions. Please take it by [date]." Link to T1 |
@@ -638,3 +638,5 @@ Minimum changes for the CPO's decisions after the rev. 2 approval. No screens we
 - **§12.3:** roles S/N/E, the AI provider (Anthropic, paused) and the time zone (fixed GMT+2) are marked resolved. HR approval of notice version 2 is still open. The demo deployment is noted.
 - **Decision 5:** "AI-drafted questions" changed to "questions".
 - **Header:** marked rev. 3, and the AI provider was removed from the open items.
+
+**Post-test fixes (2026-10-01, QA D7–D9):** A2's bank owner ≠ reviewer error text now matches the app. A6/Flow 4 say only "review outcomes" are kept. The remaining round-2-only phrases (A3, A4, V1, V2, §6 "Drafts ready") are labelled, with the round-1 wording the app shows. R1's *Deleted* state now records the app's same-response wording. Header source updated to PRD rev. 3.
