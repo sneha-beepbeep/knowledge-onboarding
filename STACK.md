@@ -77,7 +77,9 @@ Don't work around it; fix the config.
 ## First production deploy
 **The go-live order, owners and checks are in `docs/release-notes.md` §3 (rollout
 checklist). Follow that, not this list.** This is only what the commands do:
-1. `npx wrangler login`, then `npx wrangler whoami` — must be the **company** account.
+1. `npx wrangler login`, then `npx wrangler whoami` — must be the **CPO's personal**
+   account, the one that also hosts the demo (accepted deviation 2026-10-08,
+   `docs/release-notes.md` §2).
 2. `npx wrangler d1 create onboarding-knowledge-check-db --location weur` (EU) → paste the
    returned id into the top-level `database_id` in `wrangler.jsonc` and commit.
 3. `npm run db:migrate:remote`, then `npm run deploy` (guard, build, publish).

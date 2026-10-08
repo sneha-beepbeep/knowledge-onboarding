@@ -17,7 +17,7 @@ import {
   type ImportFile,
 } from "../scripts/lib/bank-import";
 import { parseImportArgs, remoteTarget } from "../scripts/lib/d1-target.mjs";
-import { DEMO_DB, DEMO_PLACEHOLDER_ID, parseJsonc, setDemoDatabaseId } from "../scripts/lib/wrangler-config.mjs";
+import { DEMO_DB, DEMO_PLACEHOLDER_ID, PROD_PLACEHOLDER_ID, parseJsonc, setDemoDatabaseId } from "../scripts/lib/wrangler-config.mjs";
 import { DEMO_DOC_NAME, DEMO_DOC_TEXT, DEMO_DOC_VERSION_DATE, DEMO_QUESTIONS, DEMO_TOPICS } from "../scripts/seed/slack-demo-data";
 import { call, makeWorld, type World } from "./helpers";
 
@@ -54,10 +54,15 @@ describe("import arguments", () => {
 
 describe("remote targets", () => {
   const REAL_ID = "3f2a1c4e-9b7d-4e21-8a6f-0c5d2e7b9a11";
-  // deploy:demo writes the real demo id into wrangler.jsonc, so start from a copy with
-  // the demo placeholder rather than whatever id is committed today.
+  // deploy:demo writes the real demo id into wrangler.jsonc, and rollout step 4.3 commits
+  // the real production id, so start from a copy with both placeholders rather than
+  // whatever ids are committed today.
   const placeholderText = setDemoDatabaseId(wranglerText, DEMO_PLACEHOLDER_ID);
-  const config = () => parseJsonc(placeholderText);
+  const config = () => {
+    const c = parseJsonc(placeholderText);
+    c.d1_databases[0].database_id = PROD_PLACEHOLDER_ID;
+    return c;
+  };
 
   it("production is refused while the production deploy guard fails", () => {
     const t = remoteTarget(config(), "onboarding-knowledge-check-db", {});

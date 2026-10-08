@@ -13,10 +13,11 @@
     {
       "binding": "DB",
       "database_name": "onboarding-knowledge-check-db",
-      // Placeholder — fine for local dev. Before first deploy, run
+      // Production DB, created 2026-10-08 with
       // `npx wrangler d1 create onboarding-knowledge-check-db --location weur`
-      // (EU, technical plan §10) and paste the real id here.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // (EU, technical plan §10) on the CPO's personal Cloudflare account
+      // (accepted deviation, release notes §2). Local dev uses a local copy.
+      "database_id": "73f6cc48-a5f4-4f1a-8cdd-d29fd008bc45",
       "migrations_dir": "migrations"
     }
   ],
