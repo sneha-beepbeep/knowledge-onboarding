@@ -1,6 +1,6 @@
 # Release notes: Onboarding Knowledge Check, version 1.0 (round-1 pilot)
 
-*Written 2026-10-01 for code on branch `build/knowledge-check` at `31307b0`. That branch has not been merged or pushed, and the repo has no git remote yet.*
+*Written 2026-10-01 for code on branch `build/knowledge-check` at `31307b0`; updated 2026-10-08 for `b19fd05` (a new sign-in link also ends that person's sessions). That branch has not been merged or pushed, and the repo has no git remote yet.*
 
 **Who this is for:** the people running the pilot: the CPO, N (question bank owner), E (reviewer), S (manager and follow-up owner), HR, and IT or the engineer. The student does not read this. They see only the app and the notice HR approves.
 
@@ -22,7 +22,7 @@ A small web app for one pilot. It checks what one new working student has unders
 6. **Retake and comparison.** Logging the follow-up unlocks Form B. Form B is then shown side by side with Form A for the flagged topics.
 7. **Export and delete.** The CPO or N can download a zip of 5 CSV files for the 90-day analysis, and can delete everything about a person in one step, which can't be undone.
 
-**How people sign in.** There are no accounts and no emails. Admins issue personal sign-in links that expire after 14 days, and you share them privately. Only the CPO can issue links for admin roles. The very first CPO is created once with a set-up code (`/setup`), and that route stops working as soon as a CPO exists.
+**How people sign in.** There are no accounts and no emails. Admins issue personal sign-in links that expire after 14 days, and you share them privately. Issuing a new link for someone kills their old link and signs them out everywhere at once; if an admin issues a link for themselves, the session they are using stays signed in. Only the CPO can issue links for admin roles. The very first CPO is created once with a set-up code (`/setup`), and that route stops working as soon as a CPO exists.
 
 **Where it runs.** On a company-owned Cloudflare account: one Worker, plus a D1 database in the EU (`weur`). Company time is fixed at GMT+2 all year (`APP_TIMEZONE = Etc/GMT-2`). IT/security has approved Cloudflare and Anthropic.
 
@@ -90,7 +90,7 @@ Everything before step 9 can be redone without touching personal data (section 5
 | 6 | **N imports the questions:**<br>1. Run the dry run: `npx tsx scripts/import-questions.mjs <file.json> --remote onboarding-knowledge-check-db --confirm-remote=onboarding-knowledge-check-db --check`.<br>2. If it's clean, run the same command without `--check`. Aim for at least 8 approved questions per topic, plus spares.<br><br>*Before N starts writing, record N's estimate of the hours a manual Forms quiz would take (the M4 effort reference), and log the writing hours separately. Before the real import, take a snapshot: `npx wrangler d1 export onboarding-knowledge-check-db --remote --output=<company-storage>/kc-before-import.sql`. Section 8 says who runs the command.* | N (engineer present for the one-time walkthrough) | **Yes** |
 | 7 | **E reviews every question, then N publishes** version 1 on A4, after checking the Form A/B split and the 70% threshold. Publishing freezes the bank for 90 days and can't be undone in the app.<br><br>*Take a second snapshot, `kc-after-publish.sql`, right after publishing.* | E, then N | **Yes** |
 | 8 | **HR approves notice v2** after reviewing the exact text the app shows the student. The CPO then records the sign-off date and signer on A1. Tell HR that D1 backups keep deleted data for up to 30 days. This can run in parallel with steps 4–7. | HR, then CPO | **Yes** |
-| 9 | **Send Form A** (A1 → A5), on or after 2026-10-01. Create the student's link and share it privately, **then press Mark as sent** (O2). Until then, the student sees "Nothing to do yet". Day 0 is the day the student submits Form A. | N | This *is* go-live |
+| 9 | **Send Form A** (A1 → A5), on or after 2026-10-01. Create the student's link and share it privately, **then press Mark as sent** (O2). Until then, the student sees "Nothing to do yet". If you re-copy the link later, the earlier link stops working and the student is signed out, so share the new one. Day 0 is the day the student submits Form A. | N | This *is* go-live |
 
 ---
 
@@ -105,14 +105,14 @@ Everything before step 9 can be redone without touching personal data (section 5
 | After the follow-up is logged | Form B unlocks for the student, and R2 shows the comparison once Form B is submitted. | N | R4 |
 | For 8 weeks from day 0 | Errors are logged per person and tagged by cause, for M5. | CPO + product team | — |
 | Monthly, and at Form A, Form B and day 90 | An A6 export (5 CSVs) and a `wrangler d1 export` snapshot, stored in the location HR agrees to. These contain personal data, so never commit them. | N / IT/engineer | — |
-| Whenever someone reports "link expired" | Sign-in links last 14 days, and sessions last 30 days (renewed while in use). Issue a new link from A2 or A5. | N / CPO | — |
+| Whenever someone reports "link expired" | Sign-in links last 14 days, and sessions last 30 days (renewed while in use). Issue a new link from A2 or A5. This also signs the person out of any older sessions, so they must use the new link. | N / CPO | — |
 | Always | `AI_ENABLED` stays `"false"`, and no `ANTHROPIC_API_KEY` secret is set (`npx wrangler secret list`). | IT/engineer | R6 |
 
 ---
 
 ## 5. Rollback checklist
 
-**Before you start.** Rolling back the code does not roll back the data. `wrangler rollback` changes only the Worker code; D1 keeps its current contents. Also, issuing a new sign-in link kills the old **link**, but a person who has already signed in keeps their **session** for up to 30 days. To cut someone off immediately, delete their sessions (R5).
+**Before you start.** Rolling back the code does not roll back the data. `wrangler rollback` changes only the Worker code; D1 keeps its current contents. Issuing a new sign-in link kills the old **link** and immediately ends all of that person's **sessions**, so it is the way to cut someone off (R5). The one exception: when an admin issues a link for themselves, the session they are using stays signed in.
 
 Useful commands (company account; database `onboarding-knowledge-check-db`, worker `onboarding-knowledge-check`):
 
@@ -143,13 +143,13 @@ There is only one migration in this release (`0000_init`), applied to an empty d
 
 ### R4. Stop or pause Form A
 - **Before it's sent:** don't press Send Form A, and don't share the link. Nothing else is needed.
-- **Link shared but not yet opened:** on A5, create the link again, which replaces and kills the earlier one, and don't share the new one.
-- **Student already signed in:** also delete their sessions (R5). Whatever they already submitted stays, until it is deleted with R7.
+- **Link shared, opened or not:** on A5, create the link again, which kills the earlier one and signs the student out, and don't share the new one.
+- **Student already signed in:** the step above already signs them out (R5). Whatever they already submitted stays, until it is deleted with R7.
 - **Telling the student:** S or N tells them in person that the check is paused. The app has no "unsend" action.
 
 ### R5. Revoke someone's access immediately (a lost or forwarded link, or a person leaving a role)
-1. Kill any unused link: issue a new link from A2 (for N or E, only the CPO can do this) and don't share it.
-2. End their active sessions, with the CPO's approval:
+1. Issue a new link from A2 (for N or E, only the CPO can do this; for the student, A2 or A5) and don't share it. This kills the old link and signs the person out of every session at once.
+2. **Fallback only**, with the CPO's approval: if the app is down, or to end sessions without issuing a new link, delete their sessions directly:
    ```sh
    npx wrangler d1 execute onboarding-knowledge-check-db --remote \
      --command "DELETE FROM sessions WHERE person_id = <id>;"
@@ -231,5 +231,6 @@ With n=1, M2, M5 and M6 are anecdotes. They can justify a next step, but not a c
 
 ## 8. Open points to settle at rollout
 
+- **Resolved: a new sign-in link did not end existing sessions** (`issueLink`). Fixed in `b19fd05`: a new link now signs the person out everywhere. CPO decision 2026-10-08: when an admin issues a link for themselves, the session they are using stays signed in.
 - **Who runs the remote import.** The CPO decided N runs the importer (PRD rev. 3). But the importer guide (`scripts/import/README.md`, "For engineers") and the script header both describe the remote load as an engineer-only, CPO-approved step, and `npm run import:questions` always targets the local database. A remote import also needs `wrangler login` to the company account on the machine it runs on. **Decide whether N gets company Cloudflare access, or whether the engineer runs the step 6 command with N present.** Then update the guide to match.
 - **Backup storage.** Agree with HR where database snapshots and CSV exports may be kept, and for how long. They contain the student's personal data.
