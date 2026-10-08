@@ -9,3 +9,5 @@ dist/
 *.log
 # Demo deploy: the BOOTSTRAP_TOKEN written by npm run deploy:demo. Never commit.
 .demo-bootstrap.local
+# Production BOOTSTRAP_TOKEN (rollout step 5.1), for the CPO's /setup. Never commit.
+.prod-bootstrap.local
