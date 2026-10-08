@@ -1,6 +1,6 @@
 # Release notes: Onboarding Knowledge Check, version 1.0 (round-1 pilot)
 
-*Written 2026-10-01 for code on branch `build/knowledge-check` at `31307b0`; updated 2026-10-08 for `b19fd05` (a new sign-in link also ends that person's sessions), then again on 2026-10-08 to add cover for absent role holders (section 4) and the CPO's confirmation that D2 is not a blocker. That branch has not been merged or pushed, and the repo has no git remote yet.*
+*Written 2026-10-01 for code on branch `build/knowledge-check` at `31307b0`; updated 2026-10-08 for `b19fd05` (a new sign-in link also ends that person's sessions), then again on 2026-10-08 to add cover for absent role holders (section 4) and the CPO's confirmation that D2 is not a blocker; updated again on 2026-10-08 to record the accepted deviation to run on the CPO's personal GitHub and Cloudflare accounts (section 2, "Accepted deviation"). The branch has been pushed to the private repo `github.com/sneha-beepbeep/decision-bias` but not yet merged into `main`.*
 
 **Who this is for:** the people running the pilot: the CPO, N (question bank owner), E (reviewer), S (manager and follow-up owner), HR, and IT or the engineer. The student does not read this. They see only the app and the notice HR approves.
 
@@ -24,7 +24,7 @@ A small web app for one pilot. It checks what one new working student has unders
 
 **How people sign in.** There are no accounts and no emails. Admins issue personal sign-in links that expire after 14 days, and you share them privately. Issuing a new link for someone kills their old link and signs them out everywhere at once; if an admin issues a link for themselves, the session they are using stays signed in. Only the CPO can issue links for admin roles. The very first CPO is created once with a set-up code (`/setup`), and that route stops working as soon as a CPO exists.
 
-**Where it runs.** On a company-owned Cloudflare account: one Worker, plus a D1 database in the EU (`weur`). Company time is fixed at GMT+2 all year (`APP_TIMEZONE = Etc/GMT-2`). IT/security has approved Cloudflare and Anthropic.
+**Where it runs.** On the CPO's personal Cloudflare account, as an accepted substitute for a company account (section 2, "Accepted deviation"): one Worker (`onboarding-knowledge-check`), plus a D1 database (`onboarding-knowledge-check-db`) in the EU (`weur`), separate from the demo. Company time is fixed at GMT+2 all year (`APP_TIMEZONE = Etc/GMT-2`). IT/security has approved Cloudflare and Anthropic.
 
 **AI is off.** Production sets `AI_ENABLED = "false"`. No onboarding material and no student data is sent to any AI service, and round 1 needs no Anthropic API key. AI drafting is built but switched off. The day-90 review decides whether round 2 uses it (section 7).
 
@@ -69,6 +69,16 @@ Step 3 of the checklist covers the browser and accessibility gap before go-live.
 
 With n=1, the pilot can show whether the loop works. It cannot show that the app reduces errors across the company.
 
+### Accepted deviation: personal accounts instead of company accounts
+
+*Decided 2026-10-08.* The company is small, so the CPO's **personal** accounts stand in for company ones: the private GitHub repo `github.com/sneha-beepbeep/decision-bias` is the git remote, and the CPO's personal Cloudflare account hosts production. The CPO checked with the CEO and got the all-clear.
+
+| # | Residual risk | Mitigation |
+|---|---|---|
+| 1 | Only the CPO can deploy, roll back (R1–R8) or restore the database. If the CPO is unavailable, nobody else can act. Until a second member exists, wherever this document gives a Cloudflare command to IT/engineer, the CPO runs it. | Invite a second member to the Cloudflare account if the plan allows. Turn on two-factor login on both Cloudflare and GitHub. |
+| 2 | The student's personal data sits on a personal account. | Covered by the CEO's all-clear. Revisit at the day-90 review. |
+| 3 | Moving to a company account later changes the `workers.dev` URL, so every sign-in link changes, and the data has to be moved with a D1 export and import. | Move only after the 90-day pilot, never during it. |
+
 ---
 
 ## 3. Rollout checklist
@@ -83,9 +93,9 @@ Everything before step 9 can be redone without touching personal data (section 5
 | # | Step | Owner | Blocks go-live |
 |---|---|---|---|
 | 1 | **Name the production role holders:** CPO, N, E, S and the student. N and E must be different people; the app also enforces this. **S must be neither the CPO nor N.** The app doesn't check this. *Confirmed by the CPO on 2026-10-08: production S is neither, so D2 is not a blocker.* If that ever changes, D2 becomes a blocker: fix the A2 warning and the notice text, and have HR approve the new text, before continuing. | CPO | **Yes** |
-| 2 | **Back up the code and deploy from `main`:** create a company git remote, push `build/knowledge-check`, and merge it into `main`. Until this is done, the code exists on one laptop with no backup. | IT/engineer | **Yes** |
+| 2 | **Back up the code and deploy from `main`:** the remote is the CPO's private personal repo `github.com/sneha-beepbeep/decision-bias` (accepted deviation, section 2). `build/knowledge-check` is already pushed there; merge it into `main` and push `main`. Deploy only from `main`. | IT/engineer | **Yes** |
 | 3 | **Do the manual browser and accessibility pass** on the demo or local copy, never production, so no test data reaches the pilot's figures. Cover T1–T3, R1, R2 and M2: keyboard only, 200% zoom, 320 px width and an axe scan. Include **one PDF upload** in A3. Anything that stops the student from completing a form blocks go-live. | CPO, with IT/engineer | **Yes** |
-| 4 | **Create production on the company account:**<br>1. Create the company Cloudflare account if it doesn't exist.<br>2. Run `npx wrangler logout`, then `npx wrangler login`, and check with `npx wrangler whoami` that it shows the **company** account. The guard doesn't check this, and the current login is the CPO's personal account.<br>3. Run `npx wrangler d1 create onboarding-knowledge-check-db --location weur`, paste the id into the top-level `database_id` in `wrangler.jsonc`, and commit.<br>4. Run `npm run db:migrate:remote`, then `npm run deploy`.<br>5. In the deploy output, check that the bindings list shows `AI_ENABLED "false"`. The guard would also accept `"true"`.<br>6. Note the URL and the version id (`npx wrangler deployments list`). | IT/engineer | **Yes** |
+| 4 | **Create production on the CPO's personal Cloudflare account** (accepted deviation, section 2):<br>1. Turn on two-factor login for the account if it isn't on yet.<br>2. Run `npx wrangler whoami` and check that it shows the **CPO's personal** account, the same one that hosts the demo. The guard doesn't check this. Production is a separate worker, `onboarding-knowledge-check`, and a separate database, `onboarding-knowledge-check-db`, in `weur`. Never reuse the demo worker or database (`knowledge-check-demo`, `knowledge-check-demo-db`).<br>3. Run `npx wrangler d1 create onboarding-knowledge-check-db --location weur`, paste the id into the top-level `database_id` in `wrangler.jsonc`, and commit.<br>4. Run `npm run db:migrate:remote`, then `npm run deploy`.<br>5. In the deploy output, check that the bindings list shows `AI_ENABLED "false"`. The guard would also accept `"true"`.<br>6. Note the URL and the version id (`npx wrangler deployments list`). | CPO (the only account holder), with IT/engineer | **Yes** |
 | 5 | **Set up the first CPO and admins:**<br>1. Run `npx wrangler secret put BOOTSTRAP_TOKEN` with a random value.<br>2. The CPO opens `<URL>/setup` and enters the code and their name.<br>3. The CPO names the step 1 people on A2, choosing E with "Someone already in the app" (D3).<br>4. The CPO issues sign-in links to N and E and shares them privately.<br><br>*`/setup` stops working once a CPO exists. Deleting the secret afterwards (`npx wrangler secret delete BOOTSTRAP_TOKEN`) is optional tidying.* | IT/engineer, then CPO | **Yes** |
 | 6 | **N imports the questions:**<br>1. Run the dry run: `npx tsx scripts/import-questions.mjs <file.json> --remote onboarding-knowledge-check-db --confirm-remote=onboarding-knowledge-check-db --check`.<br>2. If it's clean, run the same command without `--check`. Aim for at least 8 approved questions per topic, plus spares.<br><br>*Before N starts writing, record N's estimate of the hours a manual Forms quiz would take (the M4 effort reference), and log the writing hours separately. Before the real import, take a snapshot: `npx wrangler d1 export onboarding-knowledge-check-db --remote --output=<company-storage>/kc-before-import.sql`. Section 8 says who runs the command.* | N (engineer present for the one-time walkthrough) | **Yes** |
 | 7 | **E reviews every question, then N publishes** version 1 on A4, after checking the Form A/B split and the 70% threshold. Publishing freezes the bank for 90 days and can't be undone in the app.<br><br>*Take a second snapshot, `kc-after-publish.sql`, right after publishing.* | E, then N | **Yes** |
@@ -121,7 +131,7 @@ Access follows a person's current roles. When the follow-up owner role moves, th
 | Absent | Stand-in | Never | Watch out |
 |---|---|---|---|
 | **S** (manager, follow-up owner) | Another team lead | The CPO or N: a manager who is also an admin triggers D2, and the notice's "Your manager won't be told" would be false. Avoid E too (A2 shows a warning). | The 5-working-day follow-up clock keeps running. Hand over the same day. |
-| **N** (bank owner) | The CPO, or a second product-team member | E. The app enforces N ≠ E in production. | Only the CPO can assign this role. Running the remote import also needs a company Cloudflare login (section 8). |
+| **N** (bank owner) | The CPO, or a second product-team member | E. The app enforces N ≠ E in production. | Only the CPO can assign this role. Running the remote import also needs a login to the Cloudflare account that hosts production (section 8). |
 | **E** (SME reviewer) | Another subject-matter expert from the student's team | N | — |
 | **CPO** | None in the app. Only the CPO can issue CPO links. | — | **The one single point of failure.** If the CPO is locked out, an engineer fixes it in the database with the CPO's approval: remove the role (`DELETE FROM role_assignments WHERE role = 'cpo';`), set a fresh `BOOTSTRAP_TOKEN`, and the CPO signs in again at `/setup`, which works only while no CPO exists. This creates a new person record for the CPO. |
 
@@ -135,7 +145,7 @@ Access follows a person's current roles. When the follow-up owner role moves, th
 
 **Before you start.** Rolling back the code does not roll back the data. `wrangler rollback` changes only the Worker code; D1 keeps its current contents. Issuing a new sign-in link kills the old **link** and immediately ends all of that person's **sessions**, so it is the way to cut someone off (R5). The one exception: when an admin issues a link for themselves, the session they are using stays signed in.
 
-Useful commands (company account; database `onboarding-knowledge-check-db`, worker `onboarding-knowledge-check`):
+Useful commands (run while signed in to the CPO's personal Cloudflare account, which hosts production; database `onboarding-knowledge-check-db`, worker `onboarding-knowledge-check`):
 
 ```sh
 npx wrangler deployments list                         # version ids, newest first
@@ -210,7 +220,7 @@ Use this when the app is unusable and R1–R6 can't fix it in time for a follow-
 
 **Decision needed (CPO, before go-live, not blocking):**
 - **Keep it** for the accessibility pass (step 3) and for showing stakeholders.
-- **Move it** to the company account: delete it on the personal account (commands below), then `npm run deploy:demo` again while signed in to the company account. That rewrites the demo `database_id` in `wrangler.jsonc`; commit the change.
+- **Move it** to a company account: only relevant if production moves after the pilot (section 2, "Accepted deviation"). Delete it on the personal account (commands below), then `npm run deploy:demo` again while signed in to the new account. That rewrites the demo `database_id` in `wrangler.jsonc`; commit the change.
 - **Delete it:**
 
   ```sh
@@ -253,5 +263,6 @@ With n=1, M2, M5 and M6 are anecdotes. They can justify a next step, but not a c
 ## 8. Open points to settle at rollout
 
 - **Resolved: a new sign-in link did not end existing sessions** (`issueLink`). Fixed in `b19fd05`: a new link now signs the person out everywhere. CPO decision 2026-10-08: when an admin issues a link for themselves, the session they are using stays signed in.
-- **Who runs the remote import.** The CPO decided N runs the importer (PRD rev. 3). But the importer guide (`scripts/import/README.md`, "For engineers") and the script header both describe the remote load as an engineer-only, CPO-approved step, and `npm run import:questions` always targets the local database. A remote import also needs `wrangler login` to the company account on the machine it runs on. **Decide whether N gets company Cloudflare access, or whether the engineer runs the step 6 command with N present.** Then update the guide to match.
+- **Who runs the remote import.** The CPO decided N runs the importer (PRD rev. 3). But the importer guide (`scripts/import/README.md`, "For engineers") and the script header both describe the remote load as an engineer-only, CPO-approved step, and `npm run import:questions` always targets the local database. A remote import also needs `wrangler login` to the Cloudflare account that hosts production, which is now the CPO's personal account, on the machine it runs on. **Decide whether N is invited to that account (see the accepted deviation, section 2), or whether the CPO or engineer runs the step 6 command with N present.** Then update the guide to match.
+- **Demo `database_id` in the shared `wrangler.jsonc`.** The demo id belongs to the CPO's personal Cloudflare account. Since production now runs on that same account, this is no longer a cross-account risk; it is only config hygiene (the demo and production ids sit side by side in one file, and the deploy guard refuses the demo names).
 - **Backup storage.** Agree with HR where database snapshots and CSV exports may be kept, and for how long. They contain the student's personal data.
