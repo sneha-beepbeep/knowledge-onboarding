@@ -75,8 +75,37 @@ describe("sign-in links and sessions", () => {
     expect((await call("GET", "/api/me", { token: back.body.sessionToken })).body.roles).toEqual(["student"]);
   });
 
+  it("issuing a link for yourself keeps the current session and ends your other sessions", async () => {
+    // The CPO is also signed in on a second device (e.g. a lost or forwarded link).
+    const old = await issueLink(db(), w.ids.cpo);
+    const other = (await call("POST", "/api/auth/exchange", { json: { token: old } })).body.sessionToken;
+    // issueLink above ended the helper's session; sign in again on the "current" device.
+    const current = (await call("POST", "/api/auth/exchange", { json: { token: old } })).body.sessionToken;
+    expect((await call("GET", "/api/me", { token: other })).status).toBe(200);
+
+    const res = await call("POST", `/api/people/${w.ids.cpo}/link`, { token: current });
+    expect(res.status).toBe(200);
+    expect((await call("GET", "/api/me", { token: current })).status).toBe(200); // the issuer stays signed in
+    expect((await call("GET", "/api/me", { token: other })).status).toBe(401); // their other session ends
+    expect(await db().select().from(sessions).where(eq(sessions.personId, w.ids.cpo))).toHaveLength(1);
+    // The old link stops working; the new one works.
+    expect((await call("POST", "/api/auth/exchange", { json: { token: old } })).status).toBe(401);
+    expect((await call("POST", "/api/auth/exchange", { json: { token: res.body.url.split("#t=")[1] } })).status).toBe(200);
+  });
+
+  it("issuing a link for someone else ends all of their sessions", async () => {
+    const first = await issueLink(db(), w.ids.reviewer);
+    const phone = (await call("POST", "/api/auth/exchange", { json: { token: first } })).body.sessionToken;
+    const laptop = (await call("POST", "/api/auth/exchange", { json: { token: first } })).body.sessionToken;
+    const res = await call("POST", `/api/people/${w.ids.reviewer}/link`, { token: w.tokens.cpo });
+    expect(res.status).toBe(200);
+    for (const t of [phone, laptop]) expect((await call("GET", "/api/me", { token: t })).status).toBe(401);
+    expect(await db().select().from(sessions).where(eq(sessions.personId, w.ids.reviewer))).toHaveLength(0);
+    expect((await call("GET", "/api/me", { token: w.tokens.cpo })).status).toBe(200);
+  });
+
   it("refuses expired links", async () => {
-    const token = await issueLink(db(), w.ids.student, Date.now() - 15 * 86_400_000);
+    const token = await issueLink(db(), w.ids.student, { now: Date.now() - 15 * 86_400_000 });
     expect((await call("POST", "/api/auth/exchange", { json: { token } })).status).toBe(401);
     const rows = await db().select().from(signInLinks).where(eq(signInLinks.personId, w.ids.student));
     expect(rows[0].tokenHash).not.toContain(token); // only the hash is stored

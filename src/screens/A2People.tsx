@@ -98,7 +98,7 @@ export function A2People() {
 
       <h2>Sign-in links</h2>
       <p className="hint">
-        Each person signs in with their own link. Share it privately (for example in a direct message). A new link replaces the old one.
+        Each person signs in with their own link. Share it privately (for example in a direct message). A new link replaces the old one: the old link stops working and the person is signed out until they open the new one.
         Links last 14 days. {data.isCpo ? "" : "Only the CPO can create links for the bank owner and the CPO."}
       </p>
       {linkError && <p className="error" role="alert">{linkError}</p>}

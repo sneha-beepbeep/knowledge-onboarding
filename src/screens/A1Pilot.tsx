@@ -234,7 +234,7 @@ function SendFormA({ data, reload }: { data: Data; reload: () => Promise<void> }
         }
       >
         <p>They'll first see the notice explaining what the check is for and that taking part is voluntary.</p>
-        {again && <p className="hint">This creates a new link. The link you sent before stops working.</p>}
+        {again && <p className="hint">This creates a new link. The link you sent before stops working, and {student} is signed out until they open the new one.</p>}
         {err && (
           <p className="error" role="alert">
             {err}

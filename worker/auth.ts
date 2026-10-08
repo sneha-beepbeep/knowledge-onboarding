@@ -1,6 +1,6 @@
 // Sign-in links, sessions, and role guards (technical plan §5).
 import type { Context, MiddlewareHandler } from "hono";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, ne } from "drizzle-orm";
 import { sessions, signInLinks } from "./db/schema";
 import type { Role } from "./db/schema";
 import type { AppEnv, Me } from "./types";
@@ -36,8 +36,14 @@ export async function safeEqual(a: string, b: string): Promise<boolean> {
 /**
  * Issues a new sign-in link for a person, revoking any earlier link and ending all of
  * that person's sessions (technical plan §5: a new link revokes access). Returns the raw token.
+ * `keepSessionId` is the caller's own session: when an admin issues a link for themselves,
+ * the session making the request survives; their other sessions still end.
  */
-export async function issueLink(db: DB, personId: number, now = Date.now()): Promise<string> {
+export async function issueLink(
+  db: DB,
+  personId: number,
+  { now = Date.now(), keepSessionId }: { now?: number; keepSessionId?: number } = {},
+): Promise<string> {
   const token = randomToken();
   const tokenHash = await sha256(token);
   await db.batch([
@@ -45,7 +51,11 @@ export async function issueLink(db: DB, personId: number, now = Date.now()): Pro
       .update(signInLinks)
       .set({ revokedAt: now })
       .where(and(eq(signInLinks.personId, personId), isNull(signInLinks.revokedAt))),
-    db.delete(sessions).where(eq(sessions.personId, personId)),
+    db
+      .delete(sessions)
+      .where(
+        and(eq(sessions.personId, personId), keepSessionId === undefined ? undefined : ne(sessions.id, keepSessionId)),
+      ),
     db.insert(signInLinks).values({ personId, tokenHash, createdAt: now, expiresAt: now + LINK_TTL }),
   ]);
   return token;

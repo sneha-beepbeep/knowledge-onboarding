@@ -58,7 +58,7 @@ export const pilotRoutes = new Hono<AppEnv>()
     const db = getDb(c.env);
     const r = await readiness(db, c.env);
     if (!r.complete || !r.roles.student) return conflict(c, "Complete the readiness checklist to send Form A.");
-    const token = await issueLink(db, r.roles.student.personId);
+    const token = await issueLink(db, r.roles.student.personId, { keepSessionId: c.get("me").sessionId });
     return c.json({ url: linkUrl(c, token), studentName: r.roles.student.name, alreadySent: !!r.pilot.formASentAt }, 200);
   })
 

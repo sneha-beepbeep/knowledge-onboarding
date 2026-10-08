@@ -141,6 +141,6 @@ export const peopleRoutes = new Hono<AppEnv>()
       .from(roleAssignments)
       .where(and(eq(roleAssignments.personId, id), inArray(roleAssignments.role, ["bank_owner", "cpo"])));
     if (adminRoles.length && !isCpo(c.get("me"))) return notAvailable(c);
-    const token = await issueLink(db, id);
+    const token = await issueLink(db, id, { keepSessionId: c.get("me").sessionId });
     return c.json({ url: linkUrl(c, token), name: p.name }, 200);
   });

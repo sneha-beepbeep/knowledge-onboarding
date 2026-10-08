@@ -199,6 +199,7 @@ A list of the four roles. Each row shows the role name, a one-line description (
 - **Bank owner ≠ reviewer (rev. 3, PRD rev. 3):** enforced in production only. In production, an assignment that would make the bank owner and the reviewer the same person is refused with the error "The question bank owner and the content reviewer must be different people, so the reviewer isn't checking their own questions. Choose someone else." Locally and in the demo, it stays the "reviewer is also an admin" warning above.
 - **Changing the follow-up owner** after a flag exists moves the open flag to the new owner. The old owner loses access to the student's results. A confirmation dialog explains this.
 - **Unassigned roles:** the row reads "Not assigned. Required before Form A can be sent." Screens and messages that would name this person use the role label instead ("your manager").
+- **Sign-in links** (rev. 3, technical plan §5): below the roles, a table of people with *Create sign-in link*. Hint: "Each person signs in with their own link. Share it privately (for example in a direct message). A new link replaces the old one: the old link stops working and the person is signed out until they open the new one. Links last 14 days." Admins who create a link for themselves stay signed in on the device they used.
 
 ### A3 Bank: material & topics (F1, F2)
 
@@ -267,6 +268,7 @@ Rules and states:
 - If not **[plan]**: "Copy this link and send it to [student] the way you normally would:" [link] *Copy link*. After copying, *Mark as sent*.
 - Available only when readiness on A1 is complete. If it is not, the A1 button is replaced with "Complete the readiness checklist to send Form A."
 - *Send failed:* "The message couldn't be sent. Copy the link instead:" [link].
+- *Copy Form A link again* (rev. 3) creates a new link. Hint: "This creates a new link. The link you sent before stops working, and [student] is signed out until they open the new one."
 
 ### A6 Data: export & delete (F10, F11, §6)
 
