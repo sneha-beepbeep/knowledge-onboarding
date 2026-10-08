@@ -1,6 +1,6 @@
 # Release notes: Onboarding Knowledge Check, version 1.0 (round-1 pilot)
 
-*Written 2026-10-01 for code on branch `build/knowledge-check` at `31307b0`; updated 2026-10-08 for `b19fd05` (a new sign-in link also ends that person's sessions). That branch has not been merged or pushed, and the repo has no git remote yet.*
+*Written 2026-10-01 for code on branch `build/knowledge-check` at `31307b0`; updated 2026-10-08 for `b19fd05` (a new sign-in link also ends that person's sessions), then again on 2026-10-08 to add cover for absent role holders (section 4) and the CPO's confirmation that D2 is not a blocker. That branch has not been merged or pushed, and the repo has no git remote yet.*
 
 **Who this is for:** the people running the pilot: the CPO, N (question bank owner), E (reviewer), S (manager and follow-up owner), HR, and IT or the engineer. The student does not read this. They see only the app and the notice HR approves.
 
@@ -38,7 +38,7 @@ These come from `docs/test-report.md`. The CPO accepted them as pilot risks on 2
 
 | ID | What it means in practice | Who it affects | Condition |
 |---|---|---|---|
-| **D2** | Suppose the manager (S) is also the CPO or N. The app gives no warning, and the student notice still says "Your manager won't be told" if they decline. As an admin, S would in fact see "Declined". | Student, HR | **Becomes a go-live blocker if production S is the CPO or N** (step 1 of the checklist). |
+| **D2** | Suppose the manager (S) is also the CPO or N. The app gives no warning, and the student notice still says "Your manager won't be told" if they decline. As an admin, S would in fact see "Declined". | Student, HR | **Not a blocker:** the CPO confirmed on 2026-10-08 that production S is neither the CPO nor N. It would become one if S, or a stand-in for S, were ever the CPO or N (section 4, "Covering for an absent role holder"). |
 | **D3** | The rule that N and E must be different people can be bypassed by typing N's name as a "new person" when naming the reviewer. | Data integrity of M3 | Accepted. Avoid by always choosing "Someone already in the app". |
 | **D4** | N can pass admin access to someone else by issuing that person a link and then making them bank owner. The change is visible on the roles screen. | Access control | Accepted. QA's view: this is the one worth a one-line guard. |
 | **D5** | Notice v2 says "No AI tool is used in this round", and that text is fixed in code. It would become false if AI were turned on without a new notice. | Student, HR | **Must be fixed before `AI_ENABLED` is ever switched on in production.** |
@@ -82,14 +82,14 @@ Everything before step 9 can be redone without touching personal data (section 5
 
 | # | Step | Owner | Blocks go-live |
 |---|---|---|---|
-| 1 | **Name the production role holders:** CPO, N, E, S and the student. N and E must be different people; the app also enforces this. **S must be neither the CPO nor N.** The app doesn't check this, and if S is either one, D2 becomes a blocker: fix the A2 warning and the notice text, and have HR approve the new text, before continuing. | CPO | **Yes** |
+| 1 | **Name the production role holders:** CPO, N, E, S and the student. N and E must be different people; the app also enforces this. **S must be neither the CPO nor N.** The app doesn't check this. *Confirmed by the CPO on 2026-10-08: production S is neither, so D2 is not a blocker.* If that ever changes, D2 becomes a blocker: fix the A2 warning and the notice text, and have HR approve the new text, before continuing. | CPO | **Yes** |
 | 2 | **Back up the code and deploy from `main`:** create a company git remote, push `build/knowledge-check`, and merge it into `main`. Until this is done, the code exists on one laptop with no backup. | IT/engineer | **Yes** |
 | 3 | **Do the manual browser and accessibility pass** on the demo or local copy, never production, so no test data reaches the pilot's figures. Cover T1–T3, R1, R2 and M2: keyboard only, 200% zoom, 320 px width and an axe scan. Include **one PDF upload** in A3. Anything that stops the student from completing a form blocks go-live. | CPO, with IT/engineer | **Yes** |
 | 4 | **Create production on the company account:**<br>1. Create the company Cloudflare account if it doesn't exist.<br>2. Run `npx wrangler logout`, then `npx wrangler login`, and check with `npx wrangler whoami` that it shows the **company** account. The guard doesn't check this, and the current login is the CPO's personal account.<br>3. Run `npx wrangler d1 create onboarding-knowledge-check-db --location weur`, paste the id into the top-level `database_id` in `wrangler.jsonc`, and commit.<br>4. Run `npm run db:migrate:remote`, then `npm run deploy`.<br>5. In the deploy output, check that the bindings list shows `AI_ENABLED "false"`. The guard would also accept `"true"`.<br>6. Note the URL and the version id (`npx wrangler deployments list`). | IT/engineer | **Yes** |
 | 5 | **Set up the first CPO and admins:**<br>1. Run `npx wrangler secret put BOOTSTRAP_TOKEN` with a random value.<br>2. The CPO opens `<URL>/setup` and enters the code and their name.<br>3. The CPO names the step 1 people on A2, choosing E with "Someone already in the app" (D3).<br>4. The CPO issues sign-in links to N and E and shares them privately.<br><br>*`/setup` stops working once a CPO exists. Deleting the secret afterwards (`npx wrangler secret delete BOOTSTRAP_TOKEN`) is optional tidying.* | IT/engineer, then CPO | **Yes** |
 | 6 | **N imports the questions:**<br>1. Run the dry run: `npx tsx scripts/import-questions.mjs <file.json> --remote onboarding-knowledge-check-db --confirm-remote=onboarding-knowledge-check-db --check`.<br>2. If it's clean, run the same command without `--check`. Aim for at least 8 approved questions per topic, plus spares.<br><br>*Before N starts writing, record N's estimate of the hours a manual Forms quiz would take (the M4 effort reference), and log the writing hours separately. Before the real import, take a snapshot: `npx wrangler d1 export onboarding-knowledge-check-db --remote --output=<company-storage>/kc-before-import.sql`. Section 8 says who runs the command.* | N (engineer present for the one-time walkthrough) | **Yes** |
 | 7 | **E reviews every question, then N publishes** version 1 on A4, after checking the Form A/B split and the 70% threshold. Publishing freezes the bank for 90 days and can't be undone in the app.<br><br>*Take a second snapshot, `kc-after-publish.sql`, right after publishing.* | E, then N | **Yes** |
-| 8 | **HR approves notice v2** after reviewing the exact text the app shows the student. The CPO then records the sign-off date and signer on A1. Tell HR that D1 backups keep deleted data for up to 30 days. This can run in parallel with steps 4–7. | HR, then CPO | **Yes** |
+| 8 | **Name the backups, then HR approves notice v2.** The CPO names a backup for S, N and E (*to be named by the CPO*; rules in section 4, "Covering for an absent role holder"). HR reviews the exact text the app shows the student and approves the backups with it, because a stand-in for S or E sees the student's named results. The CPO then records the sign-off date and signer on A1. Tell HR that D1 backups keep deleted data for up to 30 days. This can run in parallel with steps 4–7. | CPO, HR, then CPO | **Yes** |
 | 9 | **Send Form A** (A1 → A5), on or after 2026-10-01. Create the student's link and share it privately, **then press Mark as sent** (O2). Until then, the student sees "Nothing to do yet". If you re-copy the link later, the earlier link stops working and the student is signed out, so share the new one. Day 0 is the day the student submits Form A. | N | This *is* go-live |
 
 ---
@@ -107,6 +107,27 @@ Everything before step 9 can be redone without touching personal data (section 5
 | Monthly, and at Form A, Form B and day 90 | An A6 export (5 CSVs) and a `wrangler d1 export` snapshot, stored in the location HR agrees to. These contain personal data, so never commit them. | N / IT/engineer | — |
 | Whenever someone reports "link expired" | Sign-in links last 14 days, and sessions last 30 days (renewed while in use). Issue a new link from A2 or A5. This also signs the person out of any older sessions, so they must use the new link. | N / CPO | — |
 | Always | `AI_ENABLED` stays `"false"`, and no `ANTHROPIC_API_KEY` secret is set (`npx wrangler secret list`). | IT/engineer | R6 |
+
+### Covering for an absent role holder
+
+*Approved by the CPO on 2026-10-08.* Each role has exactly one holder. To cover an absence, move the role to the stand-in; to hand it back, do the same again.
+
+1. On A2, assign the role to the stand-in, choosing "Someone already in the app" if they are already named (D3). Any admin can reassign a role at any time; only the CPO can assign the bank-owner or CPO role, or issue links for admins.
+2. Issue the stand-in a sign-in link from A2 and share it privately. A new link also signs that person out of any older sessions.
+3. When the holder is back, reassign the role to them on A2 and, if needed, issue them a new link.
+
+Access follows a person's current roles. When the follow-up owner role moves, the student's open flags move to the new holder and the old holder loses access. Who actually did the work is recorded per action (`reviewed_by` on questions, `logged_by` on follow-ups), so the day-90 analysis stays attributable.
+
+| Absent | Stand-in | Never | Watch out |
+|---|---|---|---|
+| **S** (manager, follow-up owner) | Another team lead | The CPO or N: a manager who is also an admin triggers D2, and the notice's "Your manager won't be told" would be false. Avoid E too (A2 shows a warning). | The 5-working-day follow-up clock keeps running. Hand over the same day. |
+| **N** (bank owner) | The CPO, or a second product-team member | E. The app enforces N ≠ E in production. | Only the CPO can assign this role. Running the remote import also needs a company Cloudflare login (section 8). |
+| **E** (SME reviewer) | Another subject-matter expert from the student's team | N | — |
+| **CPO** | None in the app. Only the CPO can issue CPO links. | — | **The one single point of failure.** If the CPO is locked out, an engineer fixes it in the database with the CPO's approval: remove the role (`DELETE FROM role_assignments WHERE role = 'cpo';`), set a fresh `BOOTSTRAP_TOKEN`, and the CPO signs in again at `/setup`, which works only while no CPO exists. This creates a new person record for the CPO. |
+
+**Backups are named in advance.** The student notice lists the current role holders, and a stand-in for S or E sees the student's named results. So the backups for S, N and E are named before Send Form A and approved by HR with notice v2 (step 8). Backups: *to be named by the CPO.* A stand-in who isn't on that list needs HR's approval first.
+
+**Someone can't sign in** (they aren't absent): issue them a new link from A2. No reassignment is needed.
 
 ---
 
@@ -155,7 +176,7 @@ There is only one migration in this release (`0000_init`), applied to an empty d
      --command "DELETE FROM sessions WHERE person_id = <id>;"
    ```
    To find the id: `--command "SELECT id, name FROM people;"`. For the student: `... WHERE person_id = (SELECT person_id FROM role_assignments WHERE role = 'student');`
-3. If the person should lose a role, the CPO assigns that role to someone else on A2. Access follows a person's current roles.
+3. If the person should lose a role, an admin assigns that role to someone else on A2 (only the CPO for the bank-owner or CPO role). Access follows a person's current roles. For a temporary stand-in, see "Covering for an absent role holder" (section 4).
 
 ### R6. AI was switched on by mistake
 Set `AI_ENABLED` back to `"false"` in `wrangler.jsonc` and run `npm run deploy`. Check `npx wrangler secret list`: if an `ANTHROPIC_API_KEY` exists, remove it with `npx wrangler secret delete ANTHROPIC_API_KEY`. Without that key, no call can reach Anthropic. Notice v2 states that no AI is used (D5), so tell HR if any draft was made.
