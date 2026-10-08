@@ -11,3 +11,5 @@ dist/
 .demo-bootstrap.local
 # Production BOOTSTRAP_TOKEN (rollout step 5.1), for the CPO's /setup. Never commit.
 .prod-bootstrap.local
+# Production D1 Time Travel restore bookmark (pre test-content load). Never commit.
+.prod-restore-bookmark.local
